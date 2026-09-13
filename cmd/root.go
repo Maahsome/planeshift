@@ -9,6 +9,7 @@ import (
 	"planeshift/cmd/get"
 	"planeshift/common"
 	"planeshift/config"
+	"planeshift/help"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -42,8 +43,8 @@ var (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "planeshift",
-	Short: c.CmdHelp.RootCmd.Short(),
-	Long:  c.CmdHelp.RootCmd.Long(),
+	Short: (&help.RootCmd{}).Short(),
+	Long:  (&help.RootCmd{}).Long(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
 		logFile, _ := cmd.Flags().GetString("log-file")

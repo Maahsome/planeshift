@@ -3,6 +3,7 @@ package get
 import (
 	"encoding/json"
 
+	"planeshift/help"
 	"planeshift/objects"
 
 	"github.com/pkg/errors"
@@ -13,8 +14,8 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: c.CmdHelp.GetVersionCmd.Short(),
-	Long:  c.CmdHelp.GetVersionCmd.Long(),
+	Short: (&help.GetVersionCmd{}).Short(),
+	Long:  (&help.GetVersionCmd{}).Long(),
 	Run: func(cmd *cobra.Command, args []string) {
 		version, err := expressVersion()
 		if err != nil {

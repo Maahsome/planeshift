@@ -10,6 +10,7 @@ import (
 	"planeshift/common"
 	"planeshift/config"
 	"planeshift/help"
+	"planeshift/plane"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -28,11 +29,12 @@ type (
 )
 
 var (
-	cfgFile   string
-	semVer    string
-	gitCommit string
-	gitRef    string
-	buildDate string
+	cfgFile          string
+	semVer           string
+	gitCommit        string
+	gitRef           string
+	buildDate        string
+	planeSettingsErr error
 
 	// semVerReg - gets the semVer portion only, cutting off any other release details
 	semVerReg = regexp.MustCompile(`(v[0-9]+\.[0-9]+\.[0-9]+).*`)
@@ -105,8 +107,27 @@ func addSubCommands() {
 	RootCmd.AddCommand(
 		// from 'import planeshift/cmd/<subcommand:package>'
 		// <package>.InitSubCommands(c),
-		get.InitSubCommands(c),
+		get.InitSubCommands(c, newPlaneClientFactory(c)),
 	)
+}
+
+// newPlaneClientFactory keeps Plane client creation lazy. Version commands can
+// run without Plane credentials or a reachable Plane host; resource commands
+// call the factory when they are ready to make a request.
+func newPlaneClientFactory(conf *config.Config) plane.ClientFactory {
+	return func() (plane.Client, error) {
+		if planeSettingsErr != nil {
+			return nil, planeSettingsErr
+		}
+		settings := conf.PlaneSettings.Normalize()
+		return plane.NewClient(plane.Options{
+			BaseURL:     settings.APIURL,
+			AuthMode:    settings.AuthMode,
+			APIKey:      settings.APIKey,
+			BearerToken: settings.BearerToken,
+			Timeout:     settings.Timeout,
+		})
+	}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -177,19 +198,73 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		logrus.Warn("Failed to read viper config file.")
 	}
+
+	// Bind Plane variables only after the existing config file has been read so
+	// explicit PLANE_* environment variables deterministically take precedence.
+	planeSettingsErr = bindPlaneEnvironment(viper.GetViper())
+	if planeSettingsErr == nil {
+		c.PlaneSettings, planeSettingsErr = resolvePlaneSettings(viper.GetViper())
+	}
+}
+
+// bindPlaneEnvironment binds the supported Plane environment variables
+// explicitly. This keeps Viper/environment resolution in cmd/root.go while
+// avoiding accidental imports of Viper from the reusable client package.
+func bindPlaneEnvironment(v *viper.Viper) error {
+	v.SetDefault("plane.api_url", config.DefaultPlaneAPIURL)
+	v.SetDefault("plane.timeout", config.DefaultPlaneTimeout.String())
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+	bindings := map[string]string{
+		"plane.api_url":      "PLANE_API_URL",
+		"plane.auth_mode":    "PLANE_AUTH_MODE",
+		"plane.api_key":      "PLANE_API_KEY",
+		"plane.bearer_token": "PLANE_BEARER_TOKEN",
+		"plane.timeout":      "PLANE_TIMEOUT",
+	}
+	for key, envKey := range bindings {
+		if err := v.BindEnv(key, envKey); err != nil {
+			return fmt.Errorf("bind %s: %w", envKey, err)
+		}
+	}
+	return nil
+}
+
+// resolvePlaneSettings reads only the typed Plane settings. It deliberately
+// does not validate authentication here: the client is created lazily so the
+// version commands remain independent of Plane configuration.
+func resolvePlaneSettings(v *viper.Viper) (config.PlaneSettings, error) {
+	timeout, err := config.ParsePlaneTimeout(v.GetString("plane.timeout"))
+	settings := config.PlaneSettings{
+		APIURL:      v.GetString("plane.api_url"),
+		AuthMode:    v.GetString("plane.auth_mode"),
+		APIKey:      v.GetString("plane.api_key"),
+		BearerToken: v.GetString("plane.bearer_token"),
+		Timeout:     timeout,
+	}
+	if err != nil {
+		settings.Timeout = config.DefaultPlaneTimeout
+		return settings, err
+	}
+	return settings.Normalize(), nil
 }
 
 // returns true if the file was created, false if it already exists
 func createRestrictedConfigFile(fileName string) bool {
 	if _, err := os.Stat(fileName); err != nil {
 		if os.IsNotExist(err) {
-			file, ferr := os.Create(fileName)
+			file, ferr := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 			if ferr != nil {
+				if os.IsExist(ferr) {
+					return false
+				}
 				logrus.Fatal("Unable to create the configfile.")
 			}
-			mode := int(0600)
-			if cherr := file.Chmod(os.FileMode(mode)); cherr != nil {
+			if cherr := file.Chmod(0600); cherr != nil {
 				logrus.Warn("Chmod for config file failed, please set the mode to 0600.")
+			}
+			if cerr := file.Close(); cerr != nil {
+				logrus.Warn("Closing the config file failed.")
 			}
 			return true
 		}

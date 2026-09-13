@@ -8,6 +8,7 @@ import (
 
 type (
 	Config struct {
+		PlaneSettings
 		VersionDetail    objects.Version
 		VersionJSON      string
 		OutputFormat     string
@@ -31,6 +32,9 @@ type (
 func (c *Config) outputData(data Outputtable) string {
 	switch strings.ToLower(c.OutputFormat) {
 	case "raw":
+		if raw, ok := data.(interface{ ToRAW() string }); ok {
+			return raw.ToRAW()
+		}
 		return fmt.Sprintf("%#v", data)
 	case "json":
 		return data.ToJSON()

@@ -1,0 +1,325 @@
+package get
+
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"testing"
+
+	"planeshift/config"
+	"planeshift/plane"
+
+	"github.com/spf13/cobra"
+)
+
+func TestProjectsCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
+	if projectsCmd.Parent() != getCmd {
+		t.Fatalf("projects parent = %v, want get", projectsCmd.Parent())
+	}
+	wantCommands := map[string]int{
+		"list": 1, "create": 1, "create-template": 1, "get": 2,
+		"update": 2, "archive": 2, "unarchive": 2, "delete": 2,
+	}
+	for name, argumentCount := range wantCommands {
+		command, _, err := projectsCmd.Find([]string{name})
+		if err != nil || command == nil {
+			t.Fatalf("find %s: command=%v err=%v", name, command, err)
+		}
+		if err := command.Args(command, make([]string, argumentCount-1)); err == nil {
+			t.Fatalf("%s accepted %d positional argument(s), want exact %d", name, argumentCount-1, argumentCount)
+		}
+		if err := command.Args(command, make([]string, argumentCount)); err != nil {
+			t.Fatalf("%s rejected exact positional arguments: %v", name, err)
+		}
+	}
+
+	list, _, _ := projectsCmd.Find([]string{"list"})
+	for _, name := range []string{"cursor", "per-page", "fields", "expand", "order-by"} {
+		if list.Flags().Lookup(name) == nil {
+			t.Fatalf("list missing --%s", name)
+		}
+	}
+	get, _, _ := projectsCmd.Find([]string{"get"})
+	if get.Flags().Lookup("cursor") != nil || get.Flags().Lookup("per-page") != nil {
+		t.Fatal("retrieve inherited list pagination flags")
+	}
+	create, _, _ := projectsCmd.Find([]string{"create"})
+	for _, name := range []string{"name", "identifier", "description", "icon-prop", "intake-view", "guest-view-all-features", "external-source", "is-time-tracking-enabled"} {
+		if create.Flags().Lookup(name) == nil {
+			t.Fatalf("create missing --%s", name)
+		}
+	}
+	template, _, _ := projectsCmd.Find([]string{"create-template"})
+	for _, name := range []string{"template-id", "name", "identifier", "description", "network", "project-lead"} {
+		if template.Flags().Lookup(name) == nil {
+			t.Fatalf("create-template missing --%s", name)
+		}
+	}
+}
+
+func TestProjectHelpDocumentsSafeLifecycleAndDynamicOutput(t *testing.T) {
+	help := projectsCmd.Long
+	for _, phrase := range []string{"workspace slug", "project ID", "cursor pagination", "archive", "unarchive", "204", "icon-prop"} {
+		if !strings.Contains(help, phrase) {
+			t.Fatalf("project help omitted %q: %s", phrase, help)
+		}
+	}
+	for _, secret := range []string{"api-key", "bearer", "invitation", "presigned", "upload"} {
+		if strings.Contains(strings.ToLower(help), secret) {
+			t.Fatalf("project help contains prohibited %q", secret)
+		}
+	}
+}
+
+func TestProjectCommandsResolveFactoryOnlyDuringExecution(t *testing.T) {
+	previousConfig := c
+	previousFactory := clientFactory
+	t.Cleanup(func() {
+		c = previousConfig
+		clientFactory = previousFactory
+	})
+
+	var calls int
+	fake := &fakeProjectClient{responseJSON: `{"id":"project-1","name":"Project","identifier":"PRJ"}`}
+	c = &config.Config{OutputFormat: "raw"}
+	clientFactory = func() (plane.Client, error) {
+		calls++
+		return fake, nil
+	}
+	if calls != 0 {
+		t.Fatal("factory was invoked during setup")
+	}
+
+	command := &cobra.Command{}
+	command.SetContext(context.Background())
+	output := captureStdout(t, func() {
+		if err := runGet(command, []string{"team", "project-1"}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if calls != 1 || fake.calls != 1 {
+		t.Fatalf("factory/client calls = %d/%d, want 1/1", calls, fake.calls)
+	}
+	var raw map[string]any
+	if err := json.Unmarshal([]byte(output), &raw); err != nil {
+		t.Fatalf("raw project output = %q: %v", output, err)
+	}
+	if raw["id"] != "project-1" || raw["name"] != "Project" || raw["identifier"] != "PRJ" {
+		t.Fatalf("raw project output = %q", output)
+	}
+}
+
+func TestProjectListValidationHappensBeforeFactoryAndOutputUsesConfig(t *testing.T) {
+	previousConfig := c
+	previousFactory := clientFactory
+	t.Cleanup(func() {
+		c = previousConfig
+		clientFactory = previousFactory
+	})
+
+	var calls int
+	c = &config.Config{OutputFormat: "json"}
+	clientFactory = func() (plane.Client, error) {
+		calls++
+		return &fakeProjectClient{}, nil
+	}
+	invalid := &cobra.Command{}
+	invalid.Flags().Int("per-page", 0, "")
+	if err := invalid.Flags().Set("per-page", "0"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runList(invalid, []string{"team"}); err == nil || calls != 0 {
+		t.Fatalf("invalid list result = %v, factory calls = %d", err, calls)
+	}
+
+	fake := &fakeProjectClient{responseJSON: `{"results":[],"next_cursor":null,"future":true}`}
+	clientFactory = func() (plane.Client, error) { return fake, nil }
+	valid := &cobra.Command{}
+	valid.SetContext(context.Background())
+	valid.Flags().String("cursor", "cursor:1", "")
+	valid.Flags().Int("per-page", 20, "")
+	valid.Flags().String("fields", "id,name", "")
+	valid.Flags().String("expand", "members", "")
+	valid.Flags().String("order-by", "-created_at", "")
+	output := captureStdout(t, func() {
+		if err := runList(valid, []string{"team"}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(output, `"future"`) {
+		t.Fatalf("list output did not use RawJSON/config dispatch: %q", output)
+	}
+	if fake.query.Get("order_by") != "-created_at" || fake.query.Get("per_page") != "20" {
+		t.Fatalf("list query = %v", fake.query)
+	}
+}
+
+func TestProjectLifecycle204CommandsAreQuiet(t *testing.T) {
+	previousConfig := c
+	previousFactory := clientFactory
+	t.Cleanup(func() {
+		c = previousConfig
+		clientFactory = previousFactory
+	})
+	fake := &fakeProjectClient{statusCode: http.StatusNoContent}
+	c = &config.Config{OutputFormat: "json"}
+	clientFactory = func() (plane.Client, error) { return fake, nil }
+	command := &cobra.Command{}
+	command.SetContext(context.Background())
+	for name, run := range map[string]func(*cobra.Command, []string) error{
+		"archive": runArchive, "unarchive": runUnarchive, "delete": runDelete,
+	} {
+		output := captureStdout(t, func() {
+			if err := run(command, []string{"team", "project"}); err != nil {
+				t.Fatalf("%s: %v", name, err)
+			}
+		})
+		if output != "" {
+			t.Fatalf("%s wrote output %q for 204", name, output)
+		}
+	}
+	if fake.calls != 3 || fake.lastBody != nil || fake.lastDestination != nil {
+		t.Fatalf("lifecycle calls/body/destination = %d/%#v/%#v", fake.calls, fake.lastBody, fake.lastDestination)
+	}
+}
+
+func TestProjectCreateAndUpdatePreserveChangedFalseZeroAndJSONFlags(t *testing.T) {
+	previousConfig := c
+	previousFactory := clientFactory
+	t.Cleanup(func() {
+		c = previousConfig
+		clientFactory = previousFactory
+	})
+	fake := &fakeProjectClient{responseJSON: `{"id":"project"}`}
+	c = &config.Config{OutputFormat: "raw"}
+	clientFactory = func() (plane.Client, error) { return fake, nil }
+
+	create := &cobra.Command{}
+	addCreateFlags(create)
+	for name, value := range map[string]string{
+		"name": "Project", "identifier": "PRJ", "module-view": "false", "archive-in": "0",
+		"icon-prop": `{"color":"blue"}`,
+	} {
+		if err := create.Flags().Set(name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := runCreate(create, []string{"team"}); err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(fake.lastBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var createBody map[string]any
+	if err := json.Unmarshal(body, &createBody); err != nil {
+		t.Fatal(err)
+	}
+	if createBody["module_view"] != false || createBody["archive_in"] != float64(0) || createBody["icon_prop"].(map[string]any)["color"] != "blue" {
+		t.Fatalf("create body omitted changed values: %s", body)
+	}
+
+	fake.lastBody = nil
+	update := &cobra.Command{}
+	addUpdateFlags(update)
+	for name, value := range map[string]string{
+		"cycle-view": "false", "close-in": "0", "default-state": "", "icon-prop": "null",
+	} {
+		if err := update.Flags().Set(name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := runUpdate(update, []string{"team", "project"}); err != nil {
+		t.Fatal(err)
+	}
+	body, err = json.Marshal(fake.lastBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var updateBody map[string]any
+	if err := json.Unmarshal(body, &updateBody); err != nil {
+		t.Fatal(err)
+	}
+	if updateBody["cycle_view"] != false || updateBody["close_in"] != float64(0) || updateBody["default_state"] != "" || updateBody["icon_prop"] != nil {
+		t.Fatalf("update body omitted changed values: %s", body)
+	}
+}
+
+func TestProjectInvalidIconIsRejectedBeforeFactory(t *testing.T) {
+	previousConfig := c
+	previousFactory := clientFactory
+	t.Cleanup(func() {
+		c = previousConfig
+		clientFactory = previousFactory
+	})
+	var calls int
+	c = &config.Config{OutputFormat: "raw"}
+	clientFactory = func() (plane.Client, error) {
+		calls++
+		return &fakeProjectClient{}, nil
+	}
+	command := &cobra.Command{}
+	addCreateFlags(command)
+	_ = command.Flags().Set("name", "Project")
+	_ = command.Flags().Set("identifier", "PRJ")
+	_ = command.Flags().Set("icon-prop", "not-json")
+	if err := runCreate(command, []string{"team"}); err == nil || calls != 0 {
+		t.Fatalf("invalid icon result = %v, factory calls = %d", err, calls)
+	}
+}
+
+type fakeProjectClient struct {
+	calls           int
+	query           url.Values
+	responseJSON    string
+	statusCode      int
+	lastBody        any
+	lastDestination any
+}
+
+func (f *fakeProjectClient) Do(_ context.Context, method, route string, query url.Values, body any, _ http.Header, destination any) (plane.Response, error) {
+	f.calls++
+	f.query = query
+	f.lastBody = body
+	f.lastDestination = destination
+	if method == "" || route == "" {
+		return plane.Response{}, nil
+	}
+	status := f.statusCode
+	if status == 0 {
+		status = http.StatusOK
+	}
+	if destination != nil && f.responseJSON != "" {
+		if err := json.Unmarshal([]byte(f.responseJSON), destination); err != nil {
+			return plane.Response{StatusCode: status}, err
+		}
+	}
+	return plane.Response{StatusCode: status}, nil
+}
+
+func captureStdout(t *testing.T, function func()) string {
+	t.Helper()
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	previous := os.Stdout
+	os.Stdout = writer
+	function()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = previous
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}

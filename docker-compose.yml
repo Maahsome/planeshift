@@ -1,0 +1,8 @@
+services:
+  prism:
+    image: stoplight/prism:5.15.10
+    command: ["mock", "-h", "0.0.0.0", "-m", "false", "--errors=true", "/spec/plane-api.yaml"]
+    ports:
+      - "${PRISM_PORT:-4010}:4010"
+    volumes:
+      - ./spec/plane-api.yaml:/spec/plane-api.yaml:ro

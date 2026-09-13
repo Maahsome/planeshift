@@ -2,6 +2,7 @@ package get
 
 import (
 	"planeshift/config"
+	"planeshift/help"
 
 	"github.com/spf13/cobra"
 )
@@ -9,8 +10,8 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Args:  cobra.MinimumNArgs(1),
-	Short: c.CmdHelp.GetCmd.Short(),
-	Long:  c.CmdHelp.GetCmd.Long(),
+	Short: (&help.GetCmd{}).Short(),
+	Long:  (&help.GetCmd{}).Long(),
 	Run:   func(cmd *cobra.Command, args []string) {},
 }
 

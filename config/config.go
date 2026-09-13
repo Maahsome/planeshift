@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"planeshift/help"
 	"planeshift/objects"
 	"strings"
 )
@@ -19,7 +18,6 @@ type (
 		LogLevel         string
 		LogFile          string
 		ConfigVersion    string
-		CmdHelp          help.HelpCmd
 	}
 
 	Outputtable interface {

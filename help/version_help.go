@@ -6,21 +6,20 @@ import (
 	"github.com/fatih/color"
 )
 
-type GetVersionCmd struct {
-}
+type VersionCmd struct{}
 
-func (g *GetVersionCmd) Short() string {
+func (v *VersionCmd) Short() string {
 	return "Get version information"
 }
 
-func (g *GetVersionCmd) Long() string {
+func (v *VersionCmd) Long() string {
 	longText := ""
 	yellow := color.New(color.FgYellow).SprintFunc()
 
 	longText += `EXAMPLE:
-  Get version information about the plane
+  Get planeshift version information
 `
-	longText = fmt.Sprintf("%s\n    > %s\n", longText, yellow(`planeshift get version --help`))
+	longText = fmt.Sprintf("%s\n    > %s\n", longText, yellow(`planeshift version --help`))
 
 	longText += `
       VERSION    COMMIT    BUILD_DATE

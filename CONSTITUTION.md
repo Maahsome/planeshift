@@ -41,16 +41,18 @@ This is a single-binary Go 1.25 CLI for local/operator-facing plan-resource and 
 
 ## Coding Conventions
 
-* `cmd` and `cmd/get` contain Cobra command orchestration.
+* `cmd` contains root Cobra orchestration; each resource command is owned by a
+  package under `cmd/<resource>` with one file per operation, and
+  `cmd/version` owns the canonical root version command.
 * `config` contains shared configuration, output dispatch, and semantic-version parsing.
 * `objects` contains version data and serialization implementations.
 * `common` contains logger initialization.
 * `help` contains command descriptions and examples.
 * Output-producing objects implement the `config.Outputtable` interface.
 * Output format names are normalized to lowercase before dispatch.
-* `get` commands require at least one argument through Cobra argument validation.
+* Resource operation commands validate required positional arguments through
+  Cobra argument validation.
 * The root `version` command defaults to JSON output.
-* The `get version` command defaults to text output.
 * Semantic versions are parsed through `config.ParseSemver`.
 * Serialization helpers log conversion failures and return empty output where the existing implementation does so.
 
@@ -60,4 +62,4 @@ This is a single-binary Go 1.25 CLI for local/operator-facing plan-resource and 
 * Amendments require documentation and team approval.
 * All PRs/reviews MUST verify compliance with these invariants.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-12
+**Version**: 1.1.0 | **Ratified**: 2026-09-12 | **Amended**: 2026-09-13 (PSFT-7)

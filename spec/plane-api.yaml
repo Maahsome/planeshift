@@ -2755,6 +2755,14 @@ paths:
         - $ref: '#/components/parameters/PerPage'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Expand'
+        # Official Project list documentation includes order_by; the prior
+        # Prism snapshot omitted this Project-specific query parameter.
+        - name: order_by
+          in: query
+          required: false
+          description: Field to order results by; prefix with '-' for descending order.
+          schema:
+            type: string
       responses:
         '200':
           $ref: '#/components/responses/PaginatedJson'
@@ -2778,8 +2786,6 @@ paths:
             schema:
               $ref: '#/components/schemas/JsonValue'
       responses:
-        '200':
-          $ref: '#/components/responses/Json'
         '201':
           $ref: '#/components/responses/Json'
         default:
@@ -2809,8 +2815,6 @@ paths:
             schema:
               $ref: '#/components/schemas/JsonValue'
       responses:
-        '200':
-          $ref: '#/components/responses/Json'
         '201':
           $ref: '#/components/responses/Json'
         default:
@@ -2838,17 +2842,11 @@ paths:
       operationId: post_api_v1_workspaces_workspace_slug_projects_project_id_archive
       x-plane-documentation:
         - https://developers.plane.so/api-reference/project/archive-project.md
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/JsonValue'
+      # The official archive page documents no request body and returns 204;
+      # the prior Prism snapshot allowed a body and 200/201 JSON responses.
       responses:
-        '200':
-          $ref: '#/components/responses/Json'
-        '201':
-          $ref: '#/components/responses/Json'
+        '204':
+          $ref: '#/components/responses/NoContent'
         default:
           $ref: '#/components/responses/Error'
     delete:
@@ -6696,11 +6694,8 @@ paths:
       operationId: get_api_v1_workspaces_workspace_slug_projects_resource_id
       x-plane-documentation:
         - https://developers.plane.so/api-reference/project/get-project-detail.md
-      parameters:
-        - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/PerPage'
-        - $ref: '#/components/parameters/Fields'
-        - $ref: '#/components/parameters/Expand'
+      # The official retrieve page documents no query parameters; the prior
+      # Prism snapshot incorrectly inherited the list pagination parameters.
       responses:
         '200':
           $ref: '#/components/responses/Json'

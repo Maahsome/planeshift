@@ -71,3 +71,10 @@ func TestOutputDataDispatchesLowercaseFormats(t *testing.T) {
 		})
 	}
 }
+
+func TestProjectOutputImplementsDispatcherContract(t *testing.T) {
+	var output Outputtable = objects.Project{}
+	if output == nil {
+		t.Fatal("objects.Project did not satisfy Outputtable")
+	}
+}

@@ -6,7 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"planeshift/cmd/get"
+	projectcommand "planeshift/cmd/project"
+	versioncommand "planeshift/cmd/version"
 	"planeshift/common"
 	"planeshift/config"
 	"planeshift/help"
@@ -105,9 +106,8 @@ func buildRootCmd() *cobra.Command {
 
 func addSubCommands() {
 	RootCmd.AddCommand(
-		// from 'import planeshift/cmd/<subcommand:package>'
-		// <package>.InitSubCommands(c),
-		get.InitSubCommands(c, newPlaneClientFactory(c)),
+		projectcommand.Init(c, newPlaneClientFactory(c)),
+		versioncommand.Init(c),
 	)
 }
 

@@ -1,0 +1,11 @@
+# Codex Plan
+
+# Work Ticket
+
+ID: PSFT-8-20260914-0727-F001E8
+Title: Output Format Definition
+
+## Description
+For commands that have an object output, `project list` for instance, which outputs a `project` JSON object, we should have a file in the `objects` directory, modeled after the `version.go` file there, with the different output functions. When creating the initial ToTEXT functions, we should choose 4 or 5 fields from the JSON, identifier fields, name fields and the like.
+
+Implementation plan has been generated and saved to [plans/implementation-plan-output-format-definition.md](../../plans/implementation-plan-output-format-definition.md)

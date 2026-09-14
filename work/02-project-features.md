@@ -1,6 +1,6 @@
 # Work 02: Implement Plane API — Project Features
 
-Use this file as the implementation prompt for the Project Features slice of `planeshift` (Jira ticket PSFT-2).
+Use this file as the implementation prompt for the Project Features slice of `planeshift` (Jira ticket PSFT-9).
 
 ## Prompt
 

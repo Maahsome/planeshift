@@ -3600,6 +3600,10 @@ paths:
           $ref: '#/components/responses/NoContent'
         default:
           $ref: '#/components/responses/Error'
+  # The official Project Features pages document one feature object, no
+  # pagination/query parameters, and optional boolean PATCH properties. This
+  # route is intentionally more focused than the inherited permissive Prism
+  # baseline used by other resources.
   '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/features/':
     parameters:
       - name: 'workspace_slug'
@@ -3623,14 +3627,13 @@ paths:
       operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_features
       x-plane-documentation:
         - https://developers.plane.so/api-reference/project-features/get-project-features.md
-      parameters:
-        - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/PerPage'
-        - $ref: '#/components/parameters/Fields'
-        - $ref: '#/components/parameters/Expand'
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          description: Project feature flags.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectFeatures'
         default:
           $ref: '#/components/responses/Error'
     patch:
@@ -3649,10 +3652,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JsonValue'
+              $ref: '#/components/schemas/ProjectFeaturesUpdate'
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          description: Updated project feature flags.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectFeatures'
         default:
           $ref: '#/components/responses/Error'
   '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/inbox-issues/':
@@ -8124,6 +8131,52 @@ components:
         - type: string
         - type: number
         - type: boolean
+    ProjectFeatures:
+      type: object
+      description: Project feature flags. Unknown response fields are retained for forward compatibility.
+      additionalProperties: true
+      properties:
+        epics:
+          type: boolean
+        modules:
+          type: boolean
+        cycles:
+          type: boolean
+        views:
+          type: boolean
+        pages:
+          type: boolean
+        intakes:
+          type: boolean
+        work_item_types:
+          type: boolean
+      example:
+        epics: true
+        modules: true
+        cycles: true
+        views: true
+        pages: true
+        intakes: true
+        work_item_types: true
+    ProjectFeaturesUpdate:
+      type: object
+      description: Optional boolean properties for a partial Project Features update.
+      additionalProperties: false
+      properties:
+        epics:
+          type: boolean
+        modules:
+          type: boolean
+        cycles:
+          type: boolean
+        views:
+          type: boolean
+        pages:
+          type: boolean
+        intakes:
+          type: boolean
+        work_item_types:
+          type: boolean
     PaginatedJson:
       type: object
       required:

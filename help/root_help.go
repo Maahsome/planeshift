@@ -18,12 +18,12 @@ func (r *RootCmd) Long() string {
 	yellow := color.New(color.FgYellow).SprintFunc()
 
 	longText += `EXAMPLE:
-  Get various information about plane resources
+  Manage Plane resources
 `
-	longText = fmt.Sprintf("%s\n    > %s\n", longText, yellow(`planeshift get users --help`))
+	longText = fmt.Sprintf("%s\n    > %s\n", longText, yellow(`planeshift project --help`))
 
 	longText += `
-      ID    NAME    EMAIL
+  The Project command is also available as planeshift projects.
 `
 
 	return longText

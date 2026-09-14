@@ -1,4 +1,4 @@
-package get
+package project
 
 import (
 	"context"
@@ -16,44 +16,55 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestProjectsCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
-	if projectsCmd.Parent() != getCmd {
-		t.Fatalf("projects parent = %v, want get", projectsCmd.Parent())
+func TestProjectCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
+	command := Init(&config.Config{}, nil)
+	if command.Name() != config.ProjectCommandName {
+		t.Fatalf("project command name = %q, want %q", command.Name(), config.ProjectCommandName)
+	}
+	if !command.HasAlias(config.ProjectCommandAlias) {
+		t.Fatalf("project command aliases = %v, want %q", command.Aliases, config.ProjectCommandAlias)
+	}
+	if command.Flags().NFlag() != 0 {
+		t.Fatalf("project parent has operation-specific flags: %v", command.Flags().FlagUsages())
 	}
 	wantCommands := map[string]int{
 		"list": 1, "create": 1, "create-template": 1, "get": 2,
 		"update": 2, "archive": 2, "unarchive": 2, "delete": 2,
 	}
 	for name, argumentCount := range wantCommands {
-		command, _, err := projectsCmd.Find([]string{name})
-		if err != nil || command == nil {
-			t.Fatalf("find %s: command=%v err=%v", name, command, err)
+		child, _, err := command.Find([]string{name})
+		if err != nil || child == nil {
+			t.Fatalf("find %s: command=%v err=%v", name, child, err)
 		}
-		if err := command.Args(command, make([]string, argumentCount-1)); err == nil {
+		if err := child.Args(child, make([]string, argumentCount-1)); err == nil {
 			t.Fatalf("%s accepted %d positional argument(s), want exact %d", name, argumentCount-1, argumentCount)
 		}
-		if err := command.Args(command, make([]string, argumentCount)); err != nil {
+		if err := child.Args(child, make([]string, argumentCount)); err != nil {
 			t.Fatalf("%s rejected exact positional arguments: %v", name, err)
 		}
 	}
 
-	list, _, _ := projectsCmd.Find([]string{"list"})
+	list, _, _ := command.Find([]string{"list"})
 	for _, name := range []string{"cursor", "per-page", "fields", "expand", "order-by"} {
 		if list.Flags().Lookup(name) == nil {
 			t.Fatalf("list missing --%s", name)
 		}
 	}
-	get, _, _ := projectsCmd.Find([]string{"get"})
-	if get.Flags().Lookup("cursor") != nil || get.Flags().Lookup("per-page") != nil {
-		t.Fatal("retrieve inherited list pagination flags")
+	for _, name := range []string{"cursor", "per-page", "fields", "expand", "order-by"} {
+		for _, operation := range []string{"get", "archive", "unarchive", "delete"} {
+			child, _, _ := command.Find([]string{operation})
+			if child.Flags().Lookup(name) != nil {
+				t.Fatalf("%s inherited list flag --%s", operation, name)
+			}
+		}
 	}
-	create, _, _ := projectsCmd.Find([]string{"create"})
+	create, _, _ := command.Find([]string{"create"})
 	for _, name := range []string{"name", "identifier", "description", "icon-prop", "intake-view", "guest-view-all-features", "external-source", "is-time-tracking-enabled"} {
 		if create.Flags().Lookup(name) == nil {
 			t.Fatalf("create missing --%s", name)
 		}
 	}
-	template, _, _ := projectsCmd.Find([]string{"create-template"})
+	template, _, _ := command.Find([]string{"create-template"})
 	for _, name := range []string{"template-id", "name", "identifier", "description", "network", "project-lead"} {
 		if template.Flags().Lookup(name) == nil {
 			t.Fatalf("create-template missing --%s", name)
@@ -62,8 +73,9 @@ func TestProjectsCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
 }
 
 func TestProjectHelpDocumentsSafeLifecycleAndDynamicOutput(t *testing.T) {
-	help := projectsCmd.Long
-	for _, phrase := range []string{"workspace slug", "project ID", "cursor pagination", "archive", "unarchive", "204", "icon-prop"} {
+	command := Init(&config.Config{}, nil)
+	help := command.Long
+	for _, phrase := range []string{"workspace slug", "project ID", "cursor pagination", "archive", "unarchive", "204", "icon-prop", "planeshift project", "planeshift projects"} {
 		if !strings.Contains(help, phrase) {
 			t.Fatalf("project help omitted %q: %s", phrase, help)
 		}

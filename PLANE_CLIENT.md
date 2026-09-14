@@ -27,14 +27,18 @@ The implementation follows these Constitution sections:
 - **Architectural & Async Invariants** keeps commands below `cmd.RootCmd`,
   preserves the existing dependency direction, keeps configuration access in
   `cmd/root.go`, and uses one synchronous request with no retry worker.
-- **Coding Conventions** preserves the `cmd`, `config`, `objects`, `common`,
+- **Coding Conventions** preserves the `cmd`, resource-specific command
+  packages such as `cmd/project`, `cmd/version`, `config`, `objects`, `common`,
   `help`, and `config.Outputtable` responsibilities.
 
-The client/CLI package boundary is an uncharted decision and is **pending team
-review**. The proposed minimal decision is one replaceable `planeshift/plane`
-support package with an injectable synchronous `net/http` transport; `cmd/root.go`
-resolves settings and supplies a lazy `plane.ClientFactory`; future resource
-packages depend on the client interface rather than on `cmd` or Viper.
+The PSFT-7 resource-command/package boundary is recorded as ADR-002 in
+`ARCHITECTURE.md`: resource commands live in `cmd/<resource>` packages, use a
+singular primary name with a plural alias, and receive a lazy
+`plane.ClientFactory` from `cmd/root.go`. The canonical version command is
+`planeshift version`; no generic `get` hierarchy is retained. The replaceable
+`planeshift/plane` support package continues to provide the injectable
+synchronous `net/http` transport, and resource packages depend on the client
+interface rather than on `cmd` or Viper.
 
 The consequence is that route-specific paths and models stay in later resource
 slices, while authentication, request construction, response decoding,
@@ -80,8 +84,8 @@ Exactly one mode must be selected for a resource request:
 
 An invalid/missing mode, missing selected credential, ambiguous credentials, or
 invalid timeout fails before a request is sent. The root command creates the
-factory lazily, so `version` and `get version` do not require Plane settings or
-construct a client. Secrets are not included in `String` output, JSON tags,
+factory lazily, so `version` does not require Plane settings or construct a
+client. Secrets are not included in `String` output, JSON tags,
 help text, logs, request errors, or response envelopes.
 
 ## URL and request contract
@@ -177,8 +181,8 @@ cancellation/deadlines and do not retry.
 `objects.RawJSON` implements the existing `config.Outputtable` shape for JSON,
 YAML, GRON, text, and raw output. Its raw document preserves unknown fields and
 nulls. `config` remains the single output-format dispatch point; resource
-packages do not implement their own format switch. Existing root `version`
-defaults to JSON and `get version` defaults to text.
+packages do not implement their own format switch. The root `version` command
+defaults to JSON.
 
 ## Deterministic verification
 

@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -83,15 +85,75 @@ func TestCreateRestrictedConfigFile(t *testing.T) {
 	}
 }
 
-func TestPlaneFactoryIsLazyAndVersionHierarchyRemainsAvailable(t *testing.T) {
+func TestRootCommandHierarchyAndLazyFactory(t *testing.T) {
 	conf := &config.Config{}
 	factory := newPlaneClientFactory(conf)
 	if factory == nil {
 		t.Fatal("newPlaneClientFactory returned nil")
 	}
-	// Calling the factory would correctly reject missing resource credentials;
-	// the version commands never call it.
-	if _, _, err := RootCmd.Find([]string{"get", "version"}); err != nil {
-		t.Fatalf("get version is not registered below RootCmd: %v", err)
+	project, _, err := RootCmd.Find([]string{config.ProjectCommandName})
+	if err != nil || project == nil {
+		t.Fatalf("project is not registered below RootCmd: command=%v err=%v", project, err)
 	}
+	if project.Parent() != RootCmd {
+		t.Fatalf("project parent = %v, want RootCmd", project.Parent())
+	}
+	if project.Name() != config.ProjectCommandName || !project.HasAlias(config.ProjectCommandAlias) {
+		t.Fatalf("project command = name %q aliases %v", project.Name(), project.Aliases)
+	}
+	plural, _, err := RootCmd.Find([]string{config.ProjectCommandAlias})
+	if err != nil || plural != project {
+		t.Fatalf("plural project alias resolved to command=%v err=%v, want %v", plural, err, project)
+	}
+	version, _, err := RootCmd.Find([]string{"version"})
+	if err != nil || version == nil {
+		t.Fatalf("root version is unavailable: command=%v err=%v", version, err)
+	}
+	if obsolete, _, err := RootCmd.Find([]string{"get"}); err == nil {
+		t.Fatalf("obsolete get hierarchy is still registered: command=%v", obsolete)
+	}
+	// The factory is only invoked by an operation; constructing the command
+	// hierarchy above must not require Plane credentials.
+}
+
+func TestRootVersionDefaultsToJSON(t *testing.T) {
+	previous := *c
+	t.Cleanup(func() { *c = previous })
+	c.VersionJSON = `{"SemVer":"v0.0.999","BuildDate":"","GitCommit":"","GitRef":""}`
+	c.OutputFormat = ""
+	c.FormatOverridden = false
+	version, _, err := RootCmd.Find([]string{"version"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := captureRootStdout(t, func() { version.Run(version, nil) })
+	if c.OutputFormat != "json" {
+		t.Fatalf("version output format = %q, want json", c.OutputFormat)
+	}
+	if !strings.Contains(output, `"SemVer"`) {
+		t.Fatalf("version output was not JSON: %q", output)
+	}
+}
+
+func captureRootStdout(t *testing.T, function func()) string {
+	t.Helper()
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	previous := os.Stdout
+	os.Stdout = writer
+	function()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = previous
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
 }

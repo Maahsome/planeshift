@@ -2,12 +2,12 @@
 
 ## Project Command
 
-- [ ] archive
+- [x] archive
 - [x] create
-- [ ] create-template
+- [-] create-template (This is a Business License Feature)
 - [ ] delete
 - [x] get
 - [x] list
-- [ ] unarchive
-- [ ] update
+- [x] unarchive
+- [x] update
 

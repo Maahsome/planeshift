@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"planeshift/objects"
 	projectresource "planeshift/projects"
 
 	"github.com/spf13/cobra"
@@ -21,7 +22,7 @@ func outputProject(value any) error {
 	if c == nil {
 		return fmt.Errorf("project command configuration is not initialized")
 	}
-	output, err := projectresource.RawOutput(value)
+	output, err := objects.NewProject(value)
 	if err != nil {
 		return err
 	}

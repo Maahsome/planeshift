@@ -125,6 +125,113 @@ func TestProjectCommandsResolveFactoryOnlyDuringExecution(t *testing.T) {
 	}
 }
 
+func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
+	previousConfig := c
+	previousFactory := clientFactory
+	t.Cleanup(func() {
+		c = previousConfig
+		clientFactory = previousFactory
+	})
+
+	const singleJSON = `{"id":"project-1","identifier":"PRJ","name":"Project X","workspace":"workspace-1","network":2,"description_text":null,"icon_prop":{"name":"rocket"},"default_state":null,"future_field":{"keep":true}}`
+	fake := &fakeProjectClient{responseJSON: singleJSON}
+	clientFactory = func() (plane.Client, error) { return fake, nil }
+
+	t.Run("get defaults to JSON", func(t *testing.T) {
+		c = &config.Config{}
+		command := &cobra.Command{}
+		command.SetContext(context.Background())
+		output := captureStdout(t, func() {
+			if err := runGet(command, []string{"team", "project-1"}); err != nil {
+				t.Fatal(err)
+			}
+		})
+		if c.OutputFormat != "json" {
+			t.Fatalf("default output format = %q, want json", c.OutputFormat)
+		}
+		assertProjectOutputFields(t, output)
+	})
+
+	t.Run("get preserves raw JSON", func(t *testing.T) {
+		c = &config.Config{OutputFormat: "raw"}
+		command := &cobra.Command{}
+		command.SetContext(context.Background())
+		output := captureStdout(t, func() {
+			if err := runGet(command, []string{"team", "project-1"}); err != nil {
+				t.Fatal(err)
+			}
+		})
+		assertProjectOutputFields(t, output)
+		if !strings.Contains(output, `"description_text":null`) || !strings.Contains(output, `"future_field":{"keep":true}`) {
+			t.Fatalf("raw output lost nullable/unknown fields: %q", output)
+		}
+	})
+
+	t.Run("create renders text summary", func(t *testing.T) {
+		c = &config.Config{OutputFormat: "text"}
+		command := &cobra.Command{}
+		addCreateFlags(command)
+		if err := command.Flags().Set("name", "Project X"); err != nil {
+			t.Fatal(err)
+		}
+		if err := command.Flags().Set("identifier", "PRJ"); err != nil {
+			t.Fatal(err)
+		}
+		output := captureStdout(t, func() {
+			if err := runCreate(command, []string{"team"}); err != nil {
+				t.Fatal(err)
+			}
+		})
+		for _, value := range []string{"ID", "IDENTIFIER", "NAME", "WORKSPACE", "NETWORK", "project-1", "PRJ", "Project X", "workspace-1", "2"} {
+			if !strings.Contains(output, value) {
+				t.Fatalf("text output omitted %q: %q", value, output)
+			}
+		}
+		if strings.Contains(output, "future_field") || strings.Contains(output, "rocket") {
+			t.Fatalf("text output dumped dynamic fields: %q", output)
+		}
+	})
+
+	t.Run("list renders ordered table rows", func(t *testing.T) {
+		c = &config.Config{OutputFormat: "table"}
+		fake.responseJSON = `{"next_cursor":"next","results":[{"id":"project-1","identifier":"ONE","name":"First","workspace":null,"network":null},{"id":"project-2","identifier":"TWO","name":"Second","workspace":"workspace-2","network":0}]}`
+		command := &cobra.Command{}
+		addListFlags(command)
+		command.SetContext(context.Background())
+		output := captureStdout(t, func() {
+			if err := runList(command, []string{"team"}); err != nil {
+				t.Fatal(err)
+			}
+		})
+		first := strings.Index(output, "First")
+		second := strings.Index(output, "Second")
+		if first == -1 || second == -1 || first >= second {
+			t.Fatalf("list output order = %q", output)
+		}
+		for _, value := range []string{"ID", "IDENTIFIER", "NAME", "WORKSPACE", "NETWORK", "project-1", "ONE", "project-2", "TWO", "workspace-2", "0"} {
+			if !strings.Contains(output, value) {
+				t.Fatalf("table output omitted %q: %q", value, output)
+			}
+		}
+		if strings.Contains(output, "next_cursor") {
+			t.Fatalf("table output leaked page metadata: %q", output)
+		}
+	})
+}
+
+func assertProjectOutputFields(t *testing.T, output string) {
+	t.Helper()
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(output), &fields); err != nil {
+		t.Fatalf("project output is not JSON: %q: %v", output, err)
+	}
+	for _, key := range []string{"id", "identifier", "name", "description_text", "icon_prop", "default_state", "future_field"} {
+		if _, ok := fields[key]; !ok {
+			t.Fatalf("project output omitted %q: %s", key, output)
+		}
+	}
+}
+
 func TestProjectListValidationHappensBeforeFactoryAndOutputUsesConfig(t *testing.T) {
 	previousConfig := c
 	previousFactory := clientFactory

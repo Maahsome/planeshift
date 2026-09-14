@@ -1,6 +1,6 @@
 # Work 03: Implement Plane API — Project Labels
 
-Use this file as the implementation prompt for the Project Labels slice of `planeshift` (Jira ticket PSFT-2).
+Use this file as the implementation prompt for the Project Labels slice of `planeshift` (Jira ticket PSFT-10).
 
 ## Prompt
 

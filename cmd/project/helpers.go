@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"planeshift/objects"
+	projectfeatures "planeshift/projectfeatures"
 	projectresource "planeshift/projects"
 
 	"github.com/spf13/cobra"
@@ -18,11 +19,34 @@ func projectClient() (*projectresource.Client, error) {
 	return projectresource.NewClient(client), nil
 }
 
+func projectFeaturesClient() (*projectfeatures.Client, error) {
+	client, err := clientFactory.New()
+	if err != nil {
+		return nil, err
+	}
+	return projectfeatures.NewClient(client), nil
+}
+
 func outputProject(value any) error {
 	if c == nil {
 		return fmt.Errorf("project command configuration is not initialized")
 	}
 	output, err := objects.NewProject(value)
+	if err != nil {
+		return err
+	}
+	if c.OutputFormat == "" {
+		c.OutputFormat = "json"
+	}
+	c.OutputData(output)
+	return nil
+}
+
+func outputProjectFeatures(value any) error {
+	if c == nil {
+		return fmt.Errorf("project command configuration is not initialized")
+	}
+	output, err := objects.NewRawJSONFromValue(value)
 	if err != nil {
 		return err
 	}

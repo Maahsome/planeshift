@@ -16,7 +16,7 @@ Use the singular command name for the canonical invocation; projects is an alias
 Project commands use a workspace slug as their first positional argument. Commands that address one project take the project ID second. List uses cursor pagination and defaults to Plane's server page size of 20.
 
 Available operations:
-  list, create, create-template, get, update, archive, unarchive, delete
+  list, create, create-template, get, update, archive, unarchive, delete, features
 
 Examples:
   planeshift project list my-workspace --per-page 20

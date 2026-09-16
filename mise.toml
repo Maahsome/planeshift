@@ -8,3 +8,68 @@ GIT_COMMIT=$(git rev-parse HEAD)
 go build -ldflags "-X planeshift/cmd.semVer=${SEMVER} -X planeshift/cmd.buildDate=${BUILD_DATE} -X planeshift/cmd.gitCommit=${GIT_COMMIT} -X planeshift/cmd.gitRef=/refs/tags/${SEMVER}" && \
 ./planeshift version | jq .
 """
+
+[tasks.function-test]
+description = "Run the opt-in CLI functional suite against an explicit non-production Plane target"
+run = """
+set -eu
+
+if [ "${PLANE_FUNCTIONAL_RUN:-}" != "true" ]; then
+  echo "PLANE_FUNCTIONAL_RUN=true is required to run mutating functional tests" >&2
+  exit 1
+fi
+if [ -z "${PLANE_API_URL:-}" ]; then
+  echo "PLANE_API_URL is required; choose Prism or another non-production target" >&2
+  exit 1
+fi
+case "${PLANE_API_URL}" in
+  http://*|https://*) ;;
+  *) echo "PLANE_API_URL must be an absolute http or https URL" >&2; exit 1 ;;
+esac
+case "${PLANE_API_URL}" in
+  *'@'*|*'?'*|*'#'*) echo "PLANE_API_URL must not contain credentials, query parameters, or fragments" >&2; exit 1 ;;
+esac
+case "${PLANE_API_URL}" in
+  *://*.plane.so|*://*.plane.so/*)
+    if [ "${PLANE_FUNCTIONAL_ALLOW_PRODUCTION:-false}" != "true" ]; then
+      echo "PLANE_API_URL targets Plane Cloud production; use Prism/non-production or obtain explicit team review" >&2
+      exit 1
+    fi
+    ;;
+esac
+if [ -z "${PLANE_AUTH_MODE:-}" ]; then
+  echo "PLANE_AUTH_MODE must be api-key or bearer" >&2
+  exit 1
+fi
+case "${PLANE_AUTH_MODE}" in
+  api-key)
+    if [ -z "${PLANE_API_KEY:-}" ]; then echo "PLANE_API_KEY is required for api-key auth" >&2; exit 1; fi
+    ;;
+  bearer)
+    if [ -z "${PLANE_BEARER_TOKEN:-}" ]; then echo "PLANE_BEARER_TOKEN is required for bearer auth" >&2; exit 1; fi
+    ;;
+  *) echo "PLANE_AUTH_MODE must be api-key or bearer" >&2; exit 1 ;;
+esac
+if [ -n "${PLANE_API_KEY:-}" ] && [ -n "${PLANE_BEARER_TOKEN:-}" ]; then
+  echo "Configure exactly one Plane credential" >&2
+  exit 1
+fi
+if [ -z "${PLANE_FUNCTIONAL_WORKSPACE_SLUG:-}" ]; then
+  echo "PLANE_FUNCTIONAL_WORKSPACE_SLUG is required" >&2
+  exit 1
+fi
+if [ "${PLANE_FUNCTIONAL_INCLUDE_LEGACY:-}" != "" ] && [ "${PLANE_FUNCTIONAL_INCLUDE_LEGACY}" != "true" ] && [ "${PLANE_FUNCTIONAL_INCLUDE_LEGACY}" != "false" ]; then
+  echo "PLANE_FUNCTIONAL_INCLUDE_LEGACY must be true or false" >&2
+  exit 1
+fi
+
+SEMVER=v0.0.999
+BUILD_DATE=$(gdate --utc +%FT%T.%3NZ)
+GIT_COMMIT=$(git rev-parse HEAD)
+FUNCTIONAL_CONFIG_HOME=$(mktemp -d)
+FUNCTIONAL_BINARY="$PWD/planeshift-functional"
+trap 'rm -rf "$FUNCTIONAL_CONFIG_HOME"; rm -f "$FUNCTIONAL_BINARY"' EXIT
+
+go build -o "$FUNCTIONAL_BINARY" -ldflags "-X planeshift/cmd.semVer=${SEMVER} -X planeshift/cmd.buildDate=${BUILD_DATE} -X planeshift/cmd.gitCommit=${GIT_COMMIT} -X planeshift/cmd.gitRef=/refs/tags/${SEMVER}"
+PLANESHIFT_BINARY="$FUNCTIONAL_BINARY" XDG_CONFIG_HOME="$FUNCTIONAL_CONFIG_HOME" CI=true go test -count=1 ./functional
+"""

@@ -1,12 +1,12 @@
 # Work 06: Implement Plane API — Work Item Labels
 
-Use this file as the implementation prompt for the Work Item Labels slice of `planeshift` (Jira ticket PSFT-2).
+Use this file as the implementation prompt for the public project-scoped label slice of `planeshift` (Jira ticket PSFT-11).
 
 ## Prompt
 
-You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, and the foundation prompt before editing. This slice depends on [`01-projects.md`](./01-projects.md).
+You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, [`00-api-client-foundation.md`](./00-api-client-foundation.md), and [`01-projects.md`](./01-projects.md) before editing.
 
-Implement the Work Item Labels resource completely. The scope is the 5 HTTP operations listed below. Do not implement another resource or invent behavior not present in the linked Plane documentation.
+Implement the public project-scoped label catalog and CRUD operations completely. The source-controlled [`PUBLIC_API.txt`](../PUBLIC_API.txt) is authoritative for route inclusion. This prompt owns exactly 5 methods under the project `/labels/` route family. It does not own, preserve, or recreate the excluded workspace-level `/project-labels/` route.
 
 ### Documentation to implement
 
@@ -17,22 +17,34 @@ Implement the Work Item Labels resource completely. The scope is the 5 HTTP oper
 - [Update a label](https://developers.plane.so/api-reference/label/update-label-detail.md)
 - [Delete a label](https://developers.plane.so/api-reference/label/delete-label.md)
 
-Implement the project work-item label catalog and CRUD operations. Distinguish these labels from project labels, initiative labels, release labels, and customer properties.
+### Public route matrix — 5 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 1 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/labels/` | `{slug}` workspace slug, `{project_id}` project UUID; project label collection |
+| 2 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/labels/` | `{slug}` workspace slug, `{project_id}` project UUID; create project label |
+| 3 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/labels/{label_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{label_id}` label UUID; detail |
+| 4 | PATCH | `/api/v1/workspaces/{slug}/projects/{project_id}/labels/{label_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{label_id}` label UUID; update |
+| 5 | DELETE | `/api/v1/workspaces/{slug}/projects/{project_id}/labels/{label_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{label_id}` label UUID; delete |
+
+### Dependencies and boundaries
+
+- Reuse the shared client/configuration/output contract from [`00-api-client-foundation.md`](./00-api-client-foundation.md) and the project boundary from [`01-projects.md`](./01-projects.md).
+- Keep this catalog distinct from any workspace-level label concept and from labels in removed initiative, release, or customer prompt files. The excluded `/project-labels/` route is not part of the public inventory.
+- Do not add routes outside this matrix, generated SDK code, or third-party dependencies.
 
 ### Required implementation behavior
 
-- Use the shared client, configuration, authentication, pagination, error, and output conventions established by `work/00-api-client-foundation.md`; do not create a second transport or configuration path.
-- Read every linked operation page before coding and implement its exact HTTP method, path (including trailing slash), path parameters, query parameters, request body, OAuth scope, success status, response shape, and documented error behavior. The links are the source of truth when names and URL directory slugs differ.
-- Add typed request/response models for this slice. Use pointers or equivalent presence-aware fields for nullable and PATCH fields, and preserve arbitrary JSON with a lossless representation instead of dropping unknown data.
-- Expose each listed operation through the CLI’s established command hierarchy with predictable flags/arguments and the existing output formats. List operations must make cursor/per-page controls and documented `fields`/`expand` options available where supported.
-- Keep API keys, bearer tokens, invitation data, presigned URLs, and upload form fields out of logs and accidental default output. Return useful structured errors, including non-JSON and 204 responses.
-- Add deterministic `httptest` coverage for every operation (method, path, query, auth header, body, response decoding, status handling, and representative error cases). Do not require live Plane credentials for unit tests.
-- Do not add third-party dependencies, generated SDK code, speculative endpoints, or deprecated `/issues/` aliases. Preserve existing commands and tests.
+- Read the linked operation pages and implement their exact request body, query parameters, OAuth scope, success status, response shape, and documented errors without changing the route matrix.
+- Add typed request/response models with presence-aware PATCH fields and lossless handling for nullable or dynamic JSON values.
+- Expose each method through the established Cobra/config/output conventions and expose documented pagination/filter controls for the collection.
+- Keep API keys and sensitive response fields out of logs and accidental default output. Return bounded structured errors for JSON, empty, malformed, and non-JSON responses.
+- Add deterministic `httptest` coverage for all 5 methods, including method/path/query/auth/body/decoding/status behavior and representative errors. Do not require live Plane credentials.
 
 ### Definition of done
 
-- Every operation listed in this prompt has a client method, CLI surface, typed contract, and test.
-- Pagination, nullable fields, dynamic JSON, and 204 responses are verified.
+- Every method in the matrix has one client method, CLI surface, typed contract, and deterministic test.
+- Pagination, nullable fields, dynamic JSON, and 204 responses are verified where applicable.
 - `gofmt` is clean and `CI=true go test -count=1 ./...` passes.
 - The documented build workflow in `LOCAL_BUILD.md` remains valid.
-- Changes are limited to this resource slice and its focused shared test/model support.
+- Changes stay within this resource slice and focused shared test/model support.

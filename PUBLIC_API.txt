@@ -1,0 +1,197 @@
+# Plane public API endpoint inventory
+#
+# Source: apps/api/plane/api/urls/ and apps/api/plane/api/views/
+# Branch: preview
+# Commit: d868349a55de79979eb8b98701bf1702c67ad634
+#
+# Every endpoint below is under the /api/v1/ prefix and uses the
+# X-API-Key authentication class through BaseAPIView or BaseViewSet.
+# Methods listed here are the application methods; implicit HEAD and OPTIONS
+# methods are omitted.
+#
+# Path parameter conventions:
+#   {slug}                 workspace slug
+#   {project_id}           project UUID
+#   {pk}, {issue_id}, etc. resource UUID unless otherwise noted
+#   {project_identifier}   project identifier, e.g. ENG
+#   {issue_identifier}     issue identifier, e.g. 123
+
+[Assets]
+POST   /api/v1/assets/user-assets/
+PATCH  /api/v1/assets/user-assets/{asset_id}/
+DELETE /api/v1/assets/user-assets/{asset_id}/
+POST   /api/v1/assets/user-assets/server/
+PATCH  /api/v1/assets/user-assets/{asset_id}/server/
+DELETE /api/v1/assets/user-assets/{asset_id}/server/
+POST   /api/v1/workspaces/{slug}/assets/
+GET    /api/v1/workspaces/{slug}/assets/{asset_id}/
+PATCH  /api/v1/workspaces/{slug}/assets/{asset_id}/
+
+[Cycles]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/cycles/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/cycles/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/cycles-lite/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/cycle-issues/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/cycle-issues/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/cycle-issues/{issue_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/cycle-issues/{issue_id}/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/transfer-issues/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/cycles/{cycle_id}/archive/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/archived-cycles/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/archived-cycles/{cycle_id}/unarchive/
+
+[Estimates]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/estimates/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/estimates/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/estimates/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/estimates/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/estimates/{estimate_id}/estimate-points/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/estimates/{estimate_id}/estimate-points/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/estimates/{estimate_id}/estimate-points/{estimate_point_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/estimates/{estimate_id}/estimate-points/{estimate_point_id}/
+
+[Intake issues]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/intake-issues/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/intake-issues/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/intake-issues/{issue_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/intake-issues/{issue_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/intake-issues/{issue_id}/
+
+[Workspace invitations]
+GET    /api/v1/workspaces/{slug}/invitations/
+POST   /api/v1/workspaces/{slug}/invitations/
+GET    /api/v1/workspaces/{slug}/invitations/{invitation_id}/
+PUT    /api/v1/workspaces/{slug}/invitations/{invitation_id}/
+PATCH  /api/v1/workspaces/{slug}/invitations/{invitation_id}/
+DELETE /api/v1/workspaces/{slug}/invitations/{invitation_id}/
+
+[Project labels]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/labels/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/labels/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/labels/{label_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/labels/{label_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/labels/{label_id}/
+
+[Members]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/members/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/members/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/members/{member_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/members/{member_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/members/{member_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/project-members/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/project-members/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/project-members-lite/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/project-members/{member_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/project-members/{member_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/project-members/{member_id}/
+GET    /api/v1/workspaces/{slug}/members/
+GET    /api/v1/workspaces/{slug}/members-lite/
+
+[Modules]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/modules/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/modules/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/modules-lite/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/module-issues/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/module-issues/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/module-issues/{issue_id}/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/modules/{module_id}/archive/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/archived-modules/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/archived-modules/{module_id}/unarchive/
+
+[Projects]
+GET    /api/v1/workspaces/{slug}/projects/
+POST   /api/v1/workspaces/{slug}/projects/
+GET    /api/v1/workspaces/{slug}/projects-lite/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/archive/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/archive/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/summary/
+
+[States]
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/states/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/states/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/states/{state_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/states/{state_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/states/{state_id}/
+
+[Stickies]
+GET    /api/v1/workspaces/{slug}/stickies/
+POST   /api/v1/workspaces/{slug}/stickies/
+GET    /api/v1/workspaces/{slug}/stickies/{sticky_id}/
+PUT    /api/v1/workspaces/{slug}/stickies/{sticky_id}/
+PATCH  /api/v1/workspaces/{slug}/stickies/{sticky_id}/
+DELETE /api/v1/workspaces/{slug}/stickies/{sticky_id}/
+
+[User]
+GET    /api/v1/users/me/
+
+[Work items: current routes]
+GET    /api/v1/workspaces/{slug}/work-items/search/
+GET    /api/v1/workspaces/{slug}/work-items/{project_identifier}-{issue_identifier}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/work-items/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/links/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/links/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/links/{link_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/links/{link_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/links/{link_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/comments/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/comments/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/comments/{comment_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/comments/{comment_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/comments/{comment_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/activities/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/activities/{activity_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/attachments/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/attachments/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/attachments/{attachment_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/attachments/{attachment_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/attachments/{attachment_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/relations/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/relations/
+
+[Work items: deprecated issue aliases]
+GET    /api/v1/workspaces/{slug}/issues/search/
+GET    /api/v1/workspaces/{slug}/issues/{project_identifier}-{issue_identifier}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/issues/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/links/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/links/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/links/{link_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/links/{link_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/links/{link_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/comments/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/comments/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/comments/{comment_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/comments/{comment_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/comments/{comment_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/activities/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/activities/{activity_id}/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/issue-attachments/
+POST   /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/issue-attachments/
+GET    /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/issue-attachments/{attachment_id}/
+PATCH  /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/issue-attachments/{attachment_id}/
+DELETE /api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/issue-attachments/{attachment_id}/
+
+# Not included:
+#   /api/v1/workspaces/{slug}/project-labels/
+#   This workspace-level route appears in the published documentation but is
+#   not present in this checkout's active API URL configuration.
+#
+#   apps/api/plane/api/urls/schema.py is also not imported by
+#   apps/api/plane/api/urls/__init__.py, so its schema URLs are not active
+#   under /api/v1/ in this checkout.

@@ -1,12 +1,12 @@
 # Work 47: Implement Plane API — Members
 
-Use this file as the implementation prompt for the Members slice of `planeshift` (Jira ticket PSFT-2).
+Use this file as the implementation prompt for the Members slice of `planeshift` (Jira ticket PSFT-11).
 
 ## Prompt
 
-You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, and the foundation prompt before editing. This slice depends on [`01-projects.md`](./01-projects.md).
+You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, [`00-api-client-foundation.md`](./00-api-client-foundation.md), and [`01-projects.md`](./01-projects.md) before editing.
 
-Implement the Members resource completely. The scope is the 7 HTTP operations listed below. Do not implement another resource or invent behavior not present in the linked Plane documentation.
+Implement the public workspace and project member operations completely. The source-controlled [`PUBLIC_API.txt`](../PUBLIC_API.txt) is authoritative for route inclusion. The scope is exactly 13 methods: both project member route families, their collection/detail CRUD, `project-members-lite`, and both workspace member list variants. The inventory contains no workspace-member removal path, so do not add one.
 
 ### Documentation to implement
 
@@ -17,24 +17,55 @@ Implement the Members resource completely. The scope is the 7 HTTP operations li
 - [Get project member](https://developers.plane.so/api-reference/members/get-project-member-detail.md)
 - [Update project member](https://developers.plane.so/api-reference/members/update-project-member.md)
 - [Delete project member](https://developers.plane.so/api-reference/members/delete-project-member.md)
-- [Remove workspace member](https://developers.plane.so/api-reference/members/remove-workspace-member.md)
+- The `project-members-lite` and second project member route family are included because they are explicitly listed in [`PUBLIC_API.txt`](../PUBLIC_API.txt). The documentation-only workspace removal operation is not in scope.
 
-Implement workspace member listing, project member listing and CRUD, and workspace removal. Preserve role/access fields and distinguish removing membership from deleting a user.
+### Public route matrix — 13 methods
+
+#### `/members/` project route family — 5 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 1 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/members/` | `{slug}` workspace slug, `{project_id}` project UUID; collection |
+| 2 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/members/` | `{slug}` workspace slug, `{project_id}` project UUID; create |
+| 3 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/members/{member_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{member_id}` member UUID; detail |
+| 4 | PATCH | `/api/v1/workspaces/{slug}/projects/{project_id}/members/{member_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{member_id}` member UUID; update |
+| 5 | DELETE | `/api/v1/workspaces/{slug}/projects/{project_id}/members/{member_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{member_id}` member UUID; delete |
+
+#### `/project-members/` project route family — 6 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 6 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/project-members/` | `{slug}` workspace slug, `{project_id}` project UUID; collection |
+| 7 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/project-members/` | `{slug}` workspace slug, `{project_id}` project UUID; create |
+| 8 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/project-members-lite/` | `{slug}` workspace slug, `{project_id}` project UUID; lightweight collection |
+| 9 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/project-members/{member_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{member_id}` member UUID; detail |
+| 10 | PATCH | `/api/v1/workspaces/{slug}/projects/{project_id}/project-members/{member_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{member_id}` member UUID; update |
+| 11 | DELETE | `/api/v1/workspaces/{slug}/projects/{project_id}/project-members/{member_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{member_id}` member UUID; delete |
+
+#### Workspace member list variants — 2 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 12 | GET | `/api/v1/workspaces/{slug}/members/` | `{slug}` workspace slug; full member collection |
+| 13 | GET | `/api/v1/workspaces/{slug}/members-lite/` | `{slug}` workspace slug; lightweight member collection |
+
+### Dependencies and boundaries
+
+- Reuse [`00-api-client-foundation.md`](./00-api-client-foundation.md) and project paths from [`01-projects.md`](./01-projects.md).
+- Preserve role/access fields and distinguish project membership from workspace member listing. The public inventory contains no workspace-member deletion method, so keep this prompt limited to the matrix.
 
 ### Required implementation behavior
 
-- Use the shared client, configuration, authentication, pagination, error, and output conventions established by `work/00-api-client-foundation.md`; do not create a second transport or configuration path.
-- Read every linked operation page before coding and implement its exact HTTP method, path (including trailing slash), path parameters, query parameters, request body, OAuth scope, success status, response shape, and documented error behavior. The links are the source of truth when names and URL directory slugs differ.
-- Add typed request/response models for this slice. Use pointers or equivalent presence-aware fields for nullable and PATCH fields, and preserve arbitrary JSON with a lossless representation instead of dropping unknown data.
-- Expose each listed operation through the CLI’s established command hierarchy with predictable flags/arguments and the existing output formats. List operations must make cursor/per-page controls and documented `fields`/`expand` options available where supported.
-- Keep API keys, bearer tokens, invitation data, presigned URLs, and upload form fields out of logs and accidental default output. Return useful structured errors, including non-JSON and 204 responses.
-- Add deterministic `httptest` coverage for every operation (method, path, query, auth header, body, response decoding, status handling, and representative error cases). Do not require live Plane credentials for unit tests.
-- Do not add third-party dependencies, generated SDK code, speculative endpoints, or deprecated `/issues/` aliases. Preserve existing commands and tests.
+- Read the linked operation pages and implement their exact request body, query parameters, OAuth scope, success status, response shape, and documented errors without changing the route matrix.
+- Add typed request/response models with presence-aware PATCH fields and lossless handling for nullable or dynamic JSON values.
+- Expose each method through the established Cobra/config/output conventions. Collection methods must expose documented pagination/filter controls.
+- Keep API keys and sensitive response fields out of logs and accidental default output. Return bounded structured errors for JSON, empty, malformed, and non-JSON responses.
+- Add deterministic `httptest` coverage for all 13 methods, including method/path/query/auth/body/decoding/status behavior and representative errors. Do not require live Plane credentials.
 
 ### Definition of done
 
-- Every operation listed in this prompt has a client method, CLI surface, typed contract, and test.
-- Pagination, nullable fields, dynamic JSON, and 204 responses are verified.
+- Every method in the matrix has one client method, CLI surface, typed contract, and deterministic test.
+- Both project route families, the lite route, workspace list variants, pagination, nullable fields, dynamic JSON, and 204 responses are verified where applicable.
 - `gofmt` is clean and `CI=true go test -count=1 ./...` passes.
 - The documented build workflow in `LOCAL_BUILD.md` remains valid.
-- Changes are limited to this resource slice and its focused shared test/model support.
+- Changes stay within this resource slice and focused shared test/model support.

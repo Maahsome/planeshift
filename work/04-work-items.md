@@ -1,12 +1,12 @@
 # Work 04: Implement Plane API — Work Items
 
-Use this file as the implementation prompt for the Work Items slice of `planeshift` (Jira ticket PSFT-2).
+Use this file as the implementation prompt for the Work Items slice of `planeshift` (Jira ticket PSFT-11).
 
 ## Prompt
 
-You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, and the foundation prompt before editing. This slice depends on [`01-projects.md`](./01-projects.md), [`05-work-item-states.md`](./05-work-item-states.md), [`06-work-item-labels.md`](./06-work-item-labels.md), [`07-work-item-types.md`](./07-work-item-types.md).
+You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, [`00-api-client-foundation.md`](./00-api-client-foundation.md), and [`01-projects.md`](./01-projects.md) before editing.
 
-Implement the Work Items resource completely. The scope is the 8 HTTP operations listed below. Do not implement another resource or invent behavior not present in the linked Plane documentation.
+Implement the public Work Items resource completely. The source-controlled [`PUBLIC_API.txt`](../PUBLIC_API.txt) is authoritative for route inclusion. This prompt owns the seven current core work-item methods, the two current relation methods, and the seven explicitly listed deprecated `/issues/` core aliases: exactly 16 methods. The current `/work-items/` routes are primary; aliases are a bounded compatibility inventory and must not become the preferred route family.
 
 ### Documentation to implement
 
@@ -16,26 +16,56 @@ Implement the Work Items resource completely. The scope is the 8 HTTP operations
 - [Retrieve a work item by ID](https://developers.plane.so/api-reference/issue/get-issue-detail.md)
 - [Retrieve a work item by identifier](https://developers.plane.so/api-reference/issue/get-issue-sequence-id.md)
 - [Search work items](https://developers.plane.so/api-reference/issue/search-issues.md)
-- [Advanced search work items](https://developers.plane.so/api-reference/issue/advanced-search-work-items.md)
 - [Update a work item](https://developers.plane.so/api-reference/issue/update-issue-detail.md)
 - [Delete a work item](https://developers.plane.so/api-reference/issue/delete-issue.md)
+- The relation methods and the compatibility aliases are included by the public inventory below; do not add any route outside the matrix.
 
-This is the core work-item surface: support UUID retrieval, human-facing identifier retrieval, normal search, advanced search, CRUD, relationships, assignees, labels, state, and custom fields as documented. Use `/work-items/` API routes; do not add deprecated `/issues/` aliases.
+### Public route matrix — 16 methods
+
+#### Primary `/work-items/` routes — 9 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 1 | GET | `/api/v1/workspaces/{slug}/work-items/search/` | `{slug}` workspace slug; search |
+| 2 | GET | `/api/v1/workspaces/{slug}/work-items/{project_identifier}-{issue_identifier}/` | `{slug}` workspace slug, `{project_identifier}` project identifier, `{issue_identifier}` issue identifier; lookup |
+| 3 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/` | `{slug}` workspace slug, `{project_id}` project UUID; collection |
+| 4 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/` | `{slug}` workspace slug, `{project_id}` project UUID; create |
+| 5 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; detail |
+| 6 | PATCH | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; update |
+| 7 | DELETE | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; delete |
+| 8 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/relations/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; relation collection |
+| 9 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/relations/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; create relation |
+
+#### Deprecated `/issues/` compatibility aliases — 7 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 10 | GET | `/api/v1/workspaces/{slug}/issues/search/` | `{slug}` workspace slug; compatibility search |
+| 11 | GET | `/api/v1/workspaces/{slug}/issues/{project_identifier}-{issue_identifier}/` | `{slug}` workspace slug, `{project_identifier}` project identifier, `{issue_identifier}` issue identifier; compatibility lookup |
+| 12 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/` | `{slug}` workspace slug, `{project_id}` project UUID; compatibility collection |
+| 13 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/` | `{slug}` workspace slug, `{project_id}` project UUID; compatibility create |
+| 14 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID; compatibility detail |
+| 15 | PATCH | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID; compatibility update |
+| 16 | DELETE | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID; compatibility delete |
+
+### Dependencies and boundaries
+
+- Reuse the shared client, configuration, authentication, pagination, error, and output contract from [`00-api-client-foundation.md`](./00-api-client-foundation.md); this prompt owns core work items and relations only.
+- Links, comments, activity, and attachments—including their matching compatibility families—belong to [`11-work-item-links.md`](./11-work-item-links.md), [`12-work-item-activity.md`](./12-work-item-activity.md), [`13-work-item-comments.md`](./13-work-item-comments.md), and [`14-work-item-attachments.md`](./14-work-item-attachments.md).
+- Preserve the exact distinction between `{work_item_id}` on primary routes and `{issue_id}` on deprecated aliases. Do not infer paths from the legacy documentation directory name.
 
 ### Required implementation behavior
 
-- Use the shared client, configuration, authentication, pagination, error, and output conventions established by `work/00-api-client-foundation.md`; do not create a second transport or configuration path.
-- Read every linked operation page before coding and implement its exact HTTP method, path (including trailing slash), path parameters, query parameters, request body, OAuth scope, success status, response shape, and documented error behavior. The links are the source of truth when names and URL directory slugs differ.
-- Add typed request/response models for this slice. Use pointers or equivalent presence-aware fields for nullable and PATCH fields, and preserve arbitrary JSON with a lossless representation instead of dropping unknown data.
-- Expose each listed operation through the CLI’s established command hierarchy with predictable flags/arguments and the existing output formats. List operations must make cursor/per-page controls and documented `fields`/`expand` options available where supported.
-- Keep API keys, bearer tokens, invitation data, presigned URLs, and upload form fields out of logs and accidental default output. Return useful structured errors, including non-JSON and 204 responses.
-- Add deterministic `httptest` coverage for every operation (method, path, query, auth header, body, response decoding, status handling, and representative error cases). Do not require live Plane credentials for unit tests.
-- Do not add third-party dependencies, generated SDK code, speculative endpoints, or deprecated `/issues/` aliases. Preserve existing commands and tests.
+- Read the linked operation pages and implement their exact request body, query parameters, OAuth scope, success status, response shape, and documented errors without changing the route matrix.
+- Add typed request/response models with presence-aware PATCH fields and lossless handling for nullable or dynamic JSON values.
+- Expose primary routes through the established Cobra/config/output conventions. Compatibility aliases are supported only as explicitly listed inventory routes and must never replace the primary route family.
+- Keep API keys and sensitive response fields out of logs and accidental default output. Return bounded structured errors for JSON, empty, malformed, and non-JSON responses.
+- Add deterministic `httptest` coverage for all 16 methods, including method/path/query/auth/body/decoding/status behavior and representative errors. Do not require live Plane credentials.
 
 ### Definition of done
 
-- Every operation listed in this prompt has a client method, CLI surface, typed contract, and test.
-- Pagination, nullable fields, dynamic JSON, and 204 responses are verified.
+- Every method in both matrices has one client method, CLI surface, typed contract, and deterministic test.
+- Primary and compatibility route behavior is tested separately; pagination, nullable fields, dynamic JSON, and 204 responses are verified where applicable.
 - `gofmt` is clean and `CI=true go test -count=1 ./...` passes.
 - The documented build workflow in `LOCAL_BUILD.md` remains valid.
-- Changes are limited to this resource slice and its focused shared test/model support.
+- Changes stay within this resource slice and focused shared test/model support.

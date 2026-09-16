@@ -1,35 +1,53 @@
 # Work 12: Implement Plane API — Work Item Activity
 
-Use this file as the implementation prompt for the Work Item Activity slice of `planeshift` (Jira ticket PSFT-2).
+Use this file as the implementation prompt for the Work Item Activity slice of `planeshift` (Jira ticket PSFT-11).
 
 ## Prompt
 
-You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, and the foundation prompt before editing. This slice depends on [`04-work-items.md`](./04-work-items.md).
+You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, [`00-api-client-foundation.md`](./00-api-client-foundation.md), and [`04-work-items.md`](./04-work-items.md) before editing.
 
-Implement the Work Item Activity resource completely. The scope is the 2 HTTP operations listed below. Do not implement another resource or invent behavior not present in the linked Plane documentation.
+Implement current and explicitly listed compatibility Work Item Activity operations. This is read-only history: preserve verb, field, old/new values, actor, timestamps, and pagination without synthesizing mutations. The current `/work-items/` family is primary, and the matching `/issues/` family is compatibility-only. The scope is exactly 4 methods.
 
 ### Documentation to implement
 
 - [Work Item Activity overview](https://developers.plane.so/api-reference/issue-activity/overview.md)
 - [List all work item activity](https://developers.plane.so/api-reference/issue-activity/list-issue-activities.md)
 - [Retrieve a work item activity](https://developers.plane.so/api-reference/issue-activity/get-issue-activity-detail.md)
+- The deprecated `/issues/` activity family below is included only because it is explicitly listed in [`PUBLIC_API.txt`](../PUBLIC_API.txt).
 
-This is read-only history. Preserve verb, field, old/new values, actor, timestamps, and pagination without attempting to synthesize or mutate activities.
+### Public route matrix — 4 methods
+
+#### Primary `/work-items/` routes — 2 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 1 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/activities/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; collection |
+| 2 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/activities/{activity_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID, `{activity_id}` activity UUID; detail |
+
+#### Deprecated `/issues/` compatibility routes — 2 methods
+
+| # | Method | Exact path | Path parameters / role |
+|---:|---|---|---|
+| 3 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/activities/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID; compatibility collection |
+| 4 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/activities/{activity_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID, `{activity_id}` activity UUID; compatibility detail |
+
+### Dependencies and boundaries
+
+- Reuse [`00-api-client-foundation.md`](./00-api-client-foundation.md) and the work-item identity rules in [`04-work-items.md`](./04-work-items.md).
+- This prompt is read-only and owns only the four activity routes above. It must not create an activity or add unlisted aliases.
 
 ### Required implementation behavior
 
-- Use the shared client, configuration, authentication, pagination, error, and output conventions established by `work/00-api-client-foundation.md`; do not create a second transport or configuration path.
-- Read every linked operation page before coding and implement its exact HTTP method, path (including trailing slash), path parameters, query parameters, request body, OAuth scope, success status, response shape, and documented error behavior. The links are the source of truth when names and URL directory slugs differ.
-- Add typed request/response models for this slice. Use pointers or equivalent presence-aware fields for nullable and PATCH fields, and preserve arbitrary JSON with a lossless representation instead of dropping unknown data.
-- Expose each listed operation through the CLI’s established command hierarchy with predictable flags/arguments and the existing output formats. List operations must make cursor/per-page controls and documented `fields`/`expand` options available where supported.
-- Keep API keys, bearer tokens, invitation data, presigned URLs, and upload form fields out of logs and accidental default output. Return useful structured errors, including non-JSON and 204 responses.
-- Add deterministic `httptest` coverage for every operation (method, path, query, auth header, body, response decoding, status handling, and representative error cases). Do not require live Plane credentials for unit tests.
-- Do not add third-party dependencies, generated SDK code, speculative endpoints, or deprecated `/issues/` aliases. Preserve existing commands and tests.
+- Read the linked operation pages and implement their exact query parameters, OAuth scope, success status, response shape, and documented errors without changing either route family.
+- Add typed response models that preserve nullable and dynamic old/new values without loss.
+- Expose primary routes through the established Cobra/config/output conventions; compatibility routes remain explicitly bounded and non-preferred.
+- Keep credentials and sensitive response fields out of logs and accidental default output. Return bounded structured errors for JSON, empty, malformed, and non-JSON responses.
+- Add deterministic `httptest` coverage for all 4 methods, including method/path/query/auth/decoding/status behavior and representative errors. Do not require live Plane credentials.
 
 ### Definition of done
 
-- Every operation listed in this prompt has a client method, CLI surface, typed contract, and test.
-- Pagination, nullable fields, dynamic JSON, and 204 responses are verified.
+- Every method in both matrices has one client method, CLI surface, typed contract, and deterministic test.
+- Primary and compatibility route behavior is tested separately; pagination and dynamic JSON are verified where applicable.
 - `gofmt` is clean and `CI=true go test -count=1 ./...` passes.
 - The documented build workflow in `LOCAL_BUILD.md` remains valid.
-- Changes are limited to this resource slice and its focused shared test/model support.
+- Changes stay within this resource slice and focused shared test/model support.

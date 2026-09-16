@@ -43,6 +43,9 @@ func TestProjectCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
 			t.Fatalf("%s rejected exact positional arguments: %v", name, err)
 		}
 	}
+	if features, _, err := command.Find([]string{"features"}); err == nil && features != nil && features != command {
+		t.Fatalf("unsupported features command is still registered: %v", features)
+	}
 
 	list, _, _ := command.Find([]string{"list"})
 	for _, name := range []string{"cursor", "per-page", "fields", "expand", "order-by"} {

@@ -37,7 +37,6 @@ func Init(conf *config.Config, factory plane.ClientFactory) *cobra.Command {
 		newArchiveCommand(),
 		newUnarchiveCommand(),
 		newDeleteCommand(),
-		newFeaturesCommand(),
 	)
 	return projectCmd
 }

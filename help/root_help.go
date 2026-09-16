@@ -21,11 +21,9 @@ func (r *RootCmd) Long() string {
   Manage Plane resources
 `
 	longText = fmt.Sprintf("%s\n    > %s\n", longText, yellow(`planeshift project --help`))
-	longText += fmt.Sprintf("\n    > %s\n", yellow(`planeshift project-label --help`))
 
 	longText += `
-  The Project command is also available as planeshift projects. Project Labels
-  are also available as planeshift project-labels.
+  The Project command is also available as planeshift projects.
 `
 
 	return longText

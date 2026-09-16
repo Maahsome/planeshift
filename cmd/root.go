@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	projectcommand "planeshift/cmd/project"
-	projectlabelcommand "planeshift/cmd/projectlabel"
 	versioncommand "planeshift/cmd/version"
 	"planeshift/common"
 	"planeshift/config"
@@ -108,7 +107,6 @@ func buildRootCmd() *cobra.Command {
 func addSubCommands() {
 	RootCmd.AddCommand(
 		projectcommand.Init(c, newPlaneClientFactory(c)),
-		projectlabelcommand.Init(c, newPlaneClientFactory(c)),
 		versioncommand.Init(c),
 	)
 }

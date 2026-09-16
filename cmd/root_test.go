@@ -14,6 +14,7 @@ import (
 )
 
 func TestResolvePlaneSettingsEnvironmentOverridesConfig(t *testing.T) {
+	t.Setenv("PLANE_API_KEY", "")
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	if err := os.WriteFile(configPath, []byte("plane:\n  api_url: https://config.example\n  auth_mode: api-key\n  api_key: config-key\n  timeout: 5s\n"), 0600); err != nil {
 		t.Fatal(err)
@@ -104,6 +105,17 @@ func TestRootCommandHierarchyAndLazyFactory(t *testing.T) {
 	plural, _, err := RootCmd.Find([]string{config.ProjectCommandAlias})
 	if err != nil || plural != project {
 		t.Fatalf("plural project alias resolved to command=%v err=%v, want %v", plural, err, project)
+	}
+	projectLabel, _, err := RootCmd.Find([]string{config.ProjectLabelCommandName})
+	if err != nil || projectLabel == nil || projectLabel.Parent() != RootCmd {
+		t.Fatalf("project-label is not registered below RootCmd: command=%v err=%v", projectLabel, err)
+	}
+	if projectLabel.Name() != config.ProjectLabelCommandName || !projectLabel.HasAlias(config.ProjectLabelCommandAlias) {
+		t.Fatalf("project-label command = name %q aliases %v", projectLabel.Name(), projectLabel.Aliases)
+	}
+	pluralLabel, _, err := RootCmd.Find([]string{config.ProjectLabelCommandAlias})
+	if err != nil || pluralLabel != projectLabel {
+		t.Fatalf("plural project-label alias resolved to command=%v err=%v, want %v", pluralLabel, err, projectLabel)
 	}
 	version, _, err := RootCmd.Find([]string{"version"})
 	if err != nil || version == nil {

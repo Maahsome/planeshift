@@ -101,6 +101,17 @@ func TestRootCommandHierarchyAndLazyFactory(t *testing.T) {
 	if project.Name() != config.ProjectCommandName || !project.HasAlias(config.ProjectCommandAlias) {
 		t.Fatalf("project command = name %q aliases %v", project.Name(), project.Aliases)
 	}
+	workItem, _, err := RootCmd.Find([]string{config.WorkItemCommandName})
+	if err != nil || workItem == nil || workItem.Parent() != RootCmd {
+		t.Fatalf("work-item is not registered below RootCmd: command=%v err=%v", workItem, err)
+	}
+	if workItem.Name() != config.WorkItemCommandName || !workItem.HasAlias(config.WorkItemCommandAlias) {
+		t.Fatalf("work-item command = name %q aliases %v", workItem.Name(), workItem.Aliases)
+	}
+	pluralWorkItem, _, err := RootCmd.Find([]string{config.WorkItemCommandAlias})
+	if err != nil || pluralWorkItem != workItem {
+		t.Fatalf("plural work-item alias resolved to command=%v err=%v", pluralWorkItem, err)
+	}
 	plural, _, err := RootCmd.Find([]string{config.ProjectCommandAlias})
 	if err != nil || plural != project {
 		t.Fatalf("plural project alias resolved to command=%v err=%v, want %v", plural, err, project)

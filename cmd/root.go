@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	contextcommand "planeshift/cmd/context"
 	projectcommand "planeshift/cmd/project"
 	statecommand "planeshift/cmd/state"
 	versioncommand "planeshift/cmd/version"
@@ -96,7 +97,7 @@ var RootCmd = &cobra.Command{
 }
 
 func buildRootCmd() *cobra.Command {
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.splicectl/config.yml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/planeshift/config.yml)")
 	RootCmd.PersistentFlags().StringVarP(&c.OutputFormat, "output", "o", "", "output types: json, text, yaml, gron, raw")
 	RootCmd.PersistentFlags().BoolVar(&c.NoHeaders, "no-headers", false, "Suppress header output in Text output")
 	// RootCmd.PersistentFlags().BoolVar(&c., "no-headers", false, "Suppress header output in Text output")
@@ -108,6 +109,7 @@ func buildRootCmd() *cobra.Command {
 
 func addSubCommands() {
 	RootCmd.AddCommand(
+		contextcommand.Init(c, newPlaneClientFactory(c), newContextSaver(viper.GetViper(), c), nil),
 		projectcommand.Init(c, newPlaneClientFactory(c)),
 		statecommand.Init(c, newPlaneClientFactory(c)),
 		workitemcommand.Init(c, newPlaneClientFactory(c)),
@@ -202,6 +204,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		logrus.Warn("Failed to read viper config file.")
 	}
+	c.Context = resolveContext(viper.GetViper())
 
 	// Bind Plane variables only after the existing config file has been read so
 	// explicit PLANE_* environment variables deterministically take precedence.
@@ -251,6 +254,39 @@ func resolvePlaneSettings(v *viper.Viper) (config.PlaneSettings, error) {
 		return settings, err
 	}
 	return settings.Normalize(), nil
+}
+
+// resolveContext reads only the context subtree from the selected Viper
+// instance. It deliberately does not decode the complete settings map.
+func resolveContext(v *viper.Viper) config.Context {
+	return config.Context{
+		Workspace: v.GetString("context.workspace"),
+		Project: config.ProjectContext{
+			ID:   v.GetString("context.project.id"),
+			Name: v.GetString("context.project.name"),
+		},
+	}
+}
+
+// writeContext persists the complete context subtree to the selected config
+// file while leaving all unrelated Viper keys intact.
+func writeContext(v *viper.Viper, value config.Context) error {
+	v.Set("context.workspace", value.Workspace)
+	v.Set("context.project.id", value.Project.ID)
+	v.Set("context.project.name", value.Project.Name)
+	return v.WriteConfig()
+}
+
+// newContextSaver adapts root-owned Viper persistence to the command package.
+// The in-memory model changes only after the file write succeeds.
+func newContextSaver(v *viper.Viper, conf *config.Config) func(config.Context) error {
+	return func(value config.Context) error {
+		if err := writeContext(v, value); err != nil {
+			return err
+		}
+		conf.Context = value
+		return nil
+	}
 }
 
 // returns true if the file was created, false if it already exists

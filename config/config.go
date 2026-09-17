@@ -9,6 +9,7 @@ import (
 type (
 	Config struct {
 		PlaneSettings
+		Context          Context `json:"context" yaml:"context" mapstructure:"context"`
 		VersionDetail    objects.Version
 		VersionJSON      string
 		OutputFormat     string

@@ -6,6 +6,7 @@
 |---|---|---|
 | ADR-001 | Adoption of Agentic SDLC | Accepted |
 | ADR-002 | Resource-Oriented Cobra Command Hierarchy | Accepted |
+| ADR-003 | Local Context Command Exception | Accepted |
 
 ## ADR-001: Adoption of Agentic SDLC
 
@@ -68,6 +69,17 @@ New resource commands have a predictable package/file layout and can be
 registered directly below `cmd.RootCmd` without introducing a compatibility
 `get` command. Existing version output remains available at the root with its
 JSON default, while the Plane client and API contracts are unchanged.
+
+## ADR-003: Local Context Command Exception
+
+**Status**: Accepted (PSFT-15)
+
+`context` is a local configuration command rather than a Plane resource, so
+it is an intentional exception to ADR-002's resource-only top-level command
+convention. The implementation is scoped to `cmd/context`, remains rooted in
+`cmd.RootCmd`, and keeps Viper access centralized in `cmd/root.go`. It reuses
+the existing Projects client and standard output packages and introduces no
+context-specific API resource or alias. The exception is accepted for PSFT-15.
 
 ## Legacy Documentation
 

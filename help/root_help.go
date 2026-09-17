@@ -26,6 +26,12 @@ func (r *RootCmd) Long() string {
   The Project command is also available as planeshift projects.
 
   The Work Item State command is also available as planeshift states.
+
+  Use planeshift context set or planeshift context get to manage the local
+  workspace and project context. Use planeshift context prompt for a
+  shell-friendly label such as:
+
+    my-workspace | Demo Project
 `
 
 	return longText

@@ -25,6 +25,7 @@ func TestResolvePlaneSettingsEnvironmentOverridesConfig(t *testing.T) {
 	}
 	t.Setenv("PLANE_API_URL", "https://env.example/api/v1")
 	t.Setenv("PLANE_AUTH_MODE", "bearer")
+	t.Setenv("PLANE_API_KEY", "")
 	t.Setenv("PLANE_BEARER_TOKEN", "env-token")
 	t.Setenv("PLANE_TIMEOUT", "2s")
 	if err := bindPlaneEnvironment(v); err != nil {
@@ -65,6 +66,68 @@ func TestResolvePlaneSettingsUsesConfigWhenEnvironmentAbsent(t *testing.T) {
 	if settings.APIURL != "https://config.example" || settings.AuthMode != config.AuthModeAPIKey ||
 		settings.APIKey != "config-key" || settings.Timeout != 5*time.Second {
 		t.Fatalf("resolved settings = %#v", settings)
+	}
+}
+
+func TestResolveContextReadsOnlyNestedIdentity(t *testing.T) {
+	v := viper.New()
+	v.Set("context.workspace", "my-workspace")
+	v.Set("context.project.id", "project-uuid")
+	v.Set("context.project.name", "Project X")
+	v.Set("plane.api_key", "secret-value")
+
+	got := resolveContext(v)
+	want := config.Context{Workspace: "my-workspace", Project: config.ProjectContext{ID: "project-uuid", Name: "Project X"}}
+	if got != want {
+		t.Fatalf("resolved context = %#v, want %#v", got, want)
+	}
+}
+
+func TestContextSaverPreservesUnrelatedConfigAndUpdatesAfterWrite(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	initial := []byte("configVersion: v0\nplane:\n  api_url: https://plane.example\n  api_key: secret-value\nother: keep-me\ncontext:\n  workspace: old-workspace\n  project:\n    id: old-id\n    name: Old Project\n")
+	if err := os.WriteFile(configPath, initial, 0600); err != nil {
+		t.Fatal(err)
+	}
+	v := viper.New()
+	v.SetConfigFile(configPath)
+	if err := v.ReadInConfig(); err != nil {
+		t.Fatal(err)
+	}
+	conf := &config.Config{Context: config.Context{Workspace: "old-workspace", Project: config.ProjectContext{ID: "old-id", Name: "Old Project"}}}
+	saver := newContextSaver(v, conf)
+	want := config.Context{Workspace: "new-workspace", Project: config.ProjectContext{ID: "new-id", Name: "New Project"}}
+	if err := saver(want); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Context != want {
+		t.Fatalf("in-memory context = %#v, want %#v", conf.Context, want)
+	}
+
+	check := viper.New()
+	check.SetConfigFile(configPath)
+	if err := check.ReadInConfig(); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveContext(check); got != want {
+		t.Fatalf("persisted context = %#v, want %#v", got, want)
+	}
+	if check.GetString("plane.api_url") != "https://plane.example" || check.GetString("plane.api_key") != "secret-value" || check.GetString("other") != "keep-me" {
+		t.Fatalf("unrelated config changed: plane=%q key=%q other=%q", check.GetString("plane.api_url"), check.GetString("plane.api_key"), check.GetString("other"))
+	}
+}
+
+func TestContextSaverDoesNotUpdateAfterWriteFailure(t *testing.T) {
+	v := viper.New()
+	v.SetConfigFile(filepath.Join(t.TempDir(), "missing", "config.yaml"))
+	previous := config.Context{Workspace: "old-workspace", Project: config.ProjectContext{ID: "old-id", Name: "Old Project"}}
+	conf := &config.Config{Context: previous}
+	err := newContextSaver(v, conf)(config.Context{Workspace: "new-workspace"})
+	if err == nil {
+		t.Fatal("context saver succeeded without a config file")
+	}
+	if conf.Context != previous {
+		t.Fatalf("in-memory context changed after failed write: %#v", conf.Context)
 	}
 }
 

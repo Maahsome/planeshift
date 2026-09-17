@@ -26,3 +26,10 @@ the manual checklist below or its Business-license marker.
 - [ ] relations-list
 - [ ] search
 - [ ] update
+
+## Context Command
+
+- [ ] `context set --workspace my-workspace`
+- [ ] `context set --project project-uuid`
+- [ ] `context set` prompts for workspace, then project name
+- [ ] `context get` displays only the saved context

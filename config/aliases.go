@@ -13,4 +13,6 @@ const (
 	StateCommandName = "state"
 	// StateCommandAlias is the plural alias for the Work Item State command.
 	StateCommandAlias = "states"
+	// ContextCommandName is the canonical local context command name.
+	ContextCommandName = "context"
 )

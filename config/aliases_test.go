@@ -28,3 +28,9 @@ func TestStateCommandNames(t *testing.T) {
 		t.Fatalf("StateCommandAlias = %q, want states", StateCommandAlias)
 	}
 }
+
+func TestContextCommandName(t *testing.T) {
+	if ContextCommandName != "context" {
+		t.Fatalf("ContextCommandName = %q, want context", ContextCommandName)
+	}
+}

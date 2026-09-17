@@ -1,6 +1,6 @@
 # Work 06: Implement Plane API — Work Item Labels
 
-Use this file as the implementation prompt for the public project-scoped label slice of `planeshift` (Jira ticket PSFT-11).
+Use this file as the implementation prompt for the public project-scoped label slice of `planeshift` (Jira ticket PSFT-17).
 
 ## Prompt
 

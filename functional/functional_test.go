@@ -24,6 +24,7 @@ var commandCoverage = []commandSpec{
 	{path: []string{"context"}, usage: "context"},
 	{path: []string{"context", "set"}, usage: "set", requiredFlags: []string{"--workspace", "--project"}},
 	{path: []string{"context", "get"}, usage: "get"},
+	{path: []string{"context", "prompt"}, usage: "prompt"},
 	{path: []string{"project"}, usage: "project"},
 	{path: []string{"projects"}, usage: "project"},
 	{path: []string{"project", "list"}, usage: "list workspace_slug"},
@@ -108,7 +109,7 @@ func TestVersionAndRootHelpAreSafe(t *testing.T) {
 	assertNoCredentialMaterial(t, version.Output())
 
 	for _, path := range [][]string{
-		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"},
+		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"},
 	} {
 		args := append(append([]string(nil), path...), "--help")
 		result := runner.Run(t, args...)

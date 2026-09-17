@@ -9,6 +9,9 @@ type ContextSetCmd struct{}
 // ContextGetCmd provides help for context get.
 type ContextGetCmd struct{}
 
+// ContextPromptCmd provides help for context prompt.
+type ContextPromptCmd struct{}
+
 func (c *ContextCmd) Short() string { return "Manage the local workspace and project context" }
 
 func (c *ContextCmd) Long() string {
@@ -20,15 +23,18 @@ the previously stored project name. With no flags, set prompts for the
 workspace first, then lists projects and lets you select by project name.
 
 The context is stored as context.workspace, context.project.id, and
-context.project.name. context get prints only those values.
+context.project.name. context get prints only those values. context prompt
+prints the fixed shell-friendly form workspace | project-name.
 
 Inherited output options include --output (json, text, yaml, gron, or raw) and
---no-headers for text output.
+--no-headers for text output-producing commands. context prompt always prints
+its fixed text projection regardless of --output.
 
 Examples:
   planeshift context set --workspace my-workspace
   planeshift context set --project project-uuid
-  planeshift context get --output yaml`
+  planeshift context get --output yaml
+  planeshift context prompt`
 }
 
 func (c *ContextSetCmd) Short() string { return "Set the current workspace and project context" }
@@ -51,4 +57,19 @@ func (c *ContextGetCmd) Long() string {
 
 Output uses the inherited --output option and supports JSON, YAML, GRON, text,
 table, and raw formats. Use --no-headers with text output when needed.`
+}
+
+func (c *ContextPromptCmd) Short() string { return "Print the context for a shell prompt" }
+
+func (c *ContextPromptCmd) Long() string {
+	return `Print exactly the saved workspace and project name in this form:
+
+  workspace | project-name
+
+The output is fixed plain text followed by one newline. It includes neither the
+project ID nor any other configuration, and --output does not change it.
+
+Example:
+  planeshift context prompt
+  # my-workspace | Demo Project`
 }

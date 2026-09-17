@@ -36,6 +36,7 @@ func Init(conf *config.Config, factory plane.ClientFactory, saver Saver, prompt 
 	command.AddCommand(
 		newSetCommand(conf, factory, saver, prompt),
 		newGetCommand(conf),
+		newPromptCommand(conf),
 	)
 	return command
 }

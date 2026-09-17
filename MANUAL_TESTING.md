@@ -33,3 +33,4 @@ the manual checklist below or its Business-license marker.
 - [ ] `context set --project project-uuid`
 - [ ] `context set` prompts for workspace, then project name
 - [ ] `context get` displays only the saved context
+- [ ] `context prompt` with a configured workspace/project prints exactly `workspace | project-name` on one line and displays the project name rather than the project ID

@@ -78,7 +78,7 @@ func TestInitRegistersContextTreeWithoutConstructingPlaneClient(t *testing.T) {
 	if command.Args(command, []string{"unexpected"}) == nil {
 		t.Fatal("context accepted positional arguments")
 	}
-	for _, name := range []string{"set", "get"} {
+	for _, name := range []string{"set", "get", "prompt"} {
 		child, _, err := command.Find([]string{name})
 		if err != nil || child == nil || child.Parent() != command {
 			t.Fatalf("%s registration = command=%v err=%v", name, child, err)
@@ -98,6 +98,52 @@ func TestInitRegistersContextTreeWithoutConstructingPlaneClient(t *testing.T) {
 	}
 	if factoryCalls != 0 {
 		t.Fatalf("factory called during Init: %d", factoryCalls)
+	}
+}
+
+func TestPromptPrintsOnlyWorkspaceAndProjectNameWithoutPlaneFactory(t *testing.T) {
+	conf := &config.Config{
+		Context: config.Context{
+			Workspace: "my-workspace",
+			Project:   config.ProjectContext{ID: "project-uuid", Name: "Project X"},
+		},
+		OutputFormat: "json",
+		PlaneSettings: config.PlaneSettings{
+			APIURL:      "https://plane.example",
+			APIKey:      "secret-value",
+			BearerToken: "another-secret",
+		},
+	}
+	factoryCalls := 0
+	command := Init(conf, func() (plane.Client, error) {
+		factoryCalls++
+		return nil, nil
+	}, nil, &fakePrompt{})
+	command.SetArgs([]string{"prompt"})
+
+	var executeErr error
+	output := captureStdout(t, func() {
+		executeErr = command.Execute()
+	})
+	if executeErr != nil {
+		t.Fatal(executeErr)
+	}
+	if output != "my-workspace | Project X\n" {
+		t.Fatalf("prompt output = %q, want %q", output, "my-workspace | Project X\n")
+	}
+	for _, forbidden := range []string{"project-uuid", "plane.example", "secret-value", "another-secret"} {
+		if strings.Contains(output, forbidden) {
+			t.Fatalf("prompt output exposed %q: %q", forbidden, output)
+		}
+	}
+	if factoryCalls != 0 {
+		t.Fatalf("prompt invoked Plane factory: %d", factoryCalls)
+	}
+}
+
+func TestPromptRejectsNilConfiguration(t *testing.T) {
+	if err := outputPrompt(nil); err == nil || !strings.Contains(err.Error(), "not initialized") {
+		t.Fatalf("nil prompt config error = %v", err)
 	}
 }
 

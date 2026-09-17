@@ -10,7 +10,8 @@ import (
 )
 
 func newRelationsCreateCommand() *cobra.Command {
-	command := &cobra.Command{Use: "relations-create workspace_slug project_id work_item_id", Args: cobra.ExactArgs(3), RunE: runRelationsCreate}
+	command := &cobra.Command{Use: "relations-create work_item_id", Args: cobra.ExactArgs(1), RunE: runRelationsCreate}
+	addContextFlags(command)
 	command.Flags().String("relation-type", "", "Relation type")
 	command.Flags().StringSlice("issue", nil, "Related work-item ID; repeat for multiple IDs")
 	_ = command.MarkFlagRequired("relation-type")
@@ -34,11 +35,15 @@ func runRelationsCreate(cmd *cobra.Command, args []string) error {
 	if err := validateRelationRequest(request); err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	result, _, err := client.CreateRelation(cmd.Context(), args[0], args[1], args[2], request)
+	result, _, err := client.CreateRelation(cmd.Context(), route.Workspace, route.ProjectID, args[0], request)
 	if err != nil {
 		return err
 	}

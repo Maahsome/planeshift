@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"planeshift/config"
 	stateResource "planeshift/states"
 
 	"github.com/spf13/cobra"
@@ -31,6 +32,26 @@ func outputState(value any) error {
 	}
 	c.OutputData(output)
 	return nil
+}
+
+func addContextFlags(command *cobra.Command) {
+	command.Flags().String("workspace", "", "Workspace slug; defaults to context.workspace")
+	command.Flags().String("project-id", "", "Project ID; defaults to context.project.id")
+}
+
+func routeContext(command *cobra.Command) (config.RouteContext, error) {
+	if c == nil {
+		return config.RouteContext{}, fmt.Errorf("state command configuration is not initialized")
+	}
+	workspace, err := optionalStringFlag(command, "workspace")
+	if err != nil {
+		return config.RouteContext{}, err
+	}
+	projectID, err := optionalStringFlag(command, "project-id")
+	if err != nil {
+		return config.RouteContext{}, err
+	}
+	return config.ResolveRouteContext(c.Context, workspace, projectID, true)
 }
 
 func optionalStringFlag(command *cobra.Command, name string) (*string, error) {

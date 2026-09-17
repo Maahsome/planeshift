@@ -8,10 +8,11 @@ import (
 
 func newUpdateCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:  "update workspace_slug project_id state_id",
-		Args: cobra.ExactArgs(3),
+		Use:  "update state_id",
+		Args: cobra.ExactArgs(1),
 		RunE: runUpdate,
 	}
+	addContextFlags(command)
 	command.Flags().String("name", "", "State name")
 	command.Flags().String("color", "", "State color")
 	addStateFields(command)
@@ -60,11 +61,15 @@ func runUpdate(command *cobra.Command, args []string) error {
 		Group: group, IsTriage: isTriage, Default: defaultState,
 		ExternalSource: externalSource, ExternalID: externalID,
 	}
+	route, err := routeContext(command)
+	if err != nil {
+		return err
+	}
 	client, err := stateClient()
 	if err != nil {
 		return err
 	}
-	state, _, err := client.Update(command.Context(), args[0], args[1], args[2], request)
+	state, _, err := client.Update(command.Context(), route.Workspace, route.ProjectID, args[0], request)
 	if err != nil {
 		return err
 	}

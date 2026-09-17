@@ -7,7 +7,8 @@ import (
 )
 
 func newGetByIdentifierCommand(legacy bool) *cobra.Command {
-	command := &cobra.Command{Use: "get-by-identifier workspace_slug project_identifier issue_identifier", Args: cobra.ExactArgs(3), RunE: runGetByIdentifier}
+	command := &cobra.Command{Use: "get-by-identifier project_identifier issue_identifier", Args: cobra.ExactArgs(2), RunE: runGetByIdentifier}
+	addWorkspaceFlag(command)
 	command.Flags().String("expand", "", "Comma-separated related fields to expand")
 	if legacy {
 		command.RunE = runLegacyGetByIdentifier
@@ -25,11 +26,15 @@ func runGetByIdentifier(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, false)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	item, _, err := client.GetByIdentifier(cmd.Context(), args[0], args[1], args[2], options)
+	item, _, err := client.GetByIdentifier(cmd.Context(), route.Workspace, args[0], args[1], options)
 	if err != nil {
 		return err
 	}
@@ -41,11 +46,15 @@ func runLegacyGetByIdentifier(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, false)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	item, _, err := client.LegacyGetByIdentifier(cmd.Context(), args[0], args[1], args[2], options)
+	item, _, err := client.LegacyGetByIdentifier(cmd.Context(), route.Workspace, args[0], args[1], options)
 	if err != nil {
 		return err
 	}

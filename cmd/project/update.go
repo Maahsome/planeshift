@@ -8,10 +8,11 @@ import (
 
 func newUpdateCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:  "update workspace_slug project_id",
-		Args: cobra.ExactArgs(2),
+		Use:  "update",
+		Args: cobra.NoArgs,
 		RunE: runUpdate,
 	}
+	addContextFlags(command, true)
 	addUpdateFlags(command)
 	return command
 }
@@ -118,11 +119,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		ExternalID: externalID, IsIssueTypeEnabled: isIssueTypeEnabled,
 		IsTimeTrackingEnabled: isTimeTrackingEnabled, DefaultState: defaultState, Estimate: estimate,
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := projectClient()
 	if err != nil {
 		return err
 	}
-	project, _, err := client.Update(cmd.Context(), args[0], args[1], request)
+	project, _, err := client.Update(cmd.Context(), route.Workspace, route.ProjectID, request)
 	if err != nil {
 		return err
 	}

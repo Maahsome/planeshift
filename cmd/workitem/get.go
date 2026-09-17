@@ -3,7 +3,8 @@ package workitem
 import "github.com/spf13/cobra"
 
 func newGetCommand(legacy bool) *cobra.Command {
-	command := &cobra.Command{Use: "get workspace_slug project_id work_item_id", Args: cobra.ExactArgs(3), RunE: runGet}
+	command := &cobra.Command{Use: "get work_item_id", Args: cobra.ExactArgs(1), RunE: runGet}
+	addContextFlags(command)
 	addDetailFlags(command)
 	if legacy {
 		command.RunE = runLegacyGet
@@ -16,11 +17,15 @@ func runGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	item, _, err := client.Get(cmd.Context(), args[0], args[1], args[2], options)
+	item, _, err := client.Get(cmd.Context(), route.Workspace, route.ProjectID, args[0], options)
 	if err != nil {
 		return err
 	}
@@ -32,11 +37,15 @@ func runLegacyGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	item, _, err := client.LegacyGet(cmd.Context(), args[0], args[1], args[2], options)
+	item, _, err := client.LegacyGet(cmd.Context(), route.Workspace, route.ProjectID, args[0], options)
 	if err != nil {
 		return err
 	}

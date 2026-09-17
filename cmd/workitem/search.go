@@ -3,7 +3,8 @@ package workitem
 import "github.com/spf13/cobra"
 
 func newSearchCommand(legacy bool) *cobra.Command {
-	command := &cobra.Command{Use: "search workspace_slug", Args: cobra.ExactArgs(1), RunE: runSearch}
+	command := &cobra.Command{Use: "search", Args: cobra.NoArgs, RunE: runSearch}
+	addWorkspaceFlag(command)
 	addSearchFlags(command)
 	if legacy {
 		command.RunE = runLegacySearch
@@ -16,11 +17,15 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, false)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	result, _, err := client.Search(cmd.Context(), args[0], options)
+	result, _, err := client.Search(cmd.Context(), route.Workspace, options)
 	if err != nil {
 		return err
 	}
@@ -32,11 +37,15 @@ func runLegacySearch(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, false)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	result, _, err := client.LegacySearch(cmd.Context(), args[0], options)
+	result, _, err := client.LegacySearch(cmd.Context(), route.Workspace, options)
 	if err != nil {
 		return err
 	}

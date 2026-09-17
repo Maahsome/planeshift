@@ -8,10 +8,11 @@ import (
 
 func newCreateTemplateCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:  "create-template workspace_slug",
-		Args: cobra.ExactArgs(1),
+		Use:  "create-template",
+		Args: cobra.NoArgs,
 		RunE: runCreateTemplate,
 	}
+	addContextFlags(command, false)
 	command.Flags().String("template-id", "", "Project template ID")
 	command.Flags().String("name", "", "Project name override")
 	command.Flags().String("identifier", "", "Project identifier override")
@@ -51,11 +52,15 @@ func runCreateTemplate(cmd *cobra.Command, args []string) error {
 		TemplateID: templateID, Name: name, Identifier: identifier, Description: description,
 		Network: network, ProjectLead: projectLead,
 	}
+	route, err := routeContext(cmd, false)
+	if err != nil {
+		return err
+	}
 	client, err := projectClient()
 	if err != nil {
 		return err
 	}
-	project, _, err := client.CreateFromTemplate(cmd.Context(), args[0], request)
+	project, _, err := client.CreateFromTemplate(cmd.Context(), route.Workspace, request)
 	if err != nil {
 		return err
 	}

@@ -10,10 +10,13 @@ func (w *WorkItemCmd) Long() string {
 	return `Manage work items in a project.
 
 The canonical command is work-item; work-items is its plural alias. Primary
-commands use the current /work-items/ API family. Positional arguments start
-with the workspace slug, followed by the project ID where a project scope is
-needed. Identifier lookup takes workspace slug, project identifier, and issue
-identifier in that order.
+commands use the current /work-items/ API family. Project-scoped commands use
+--workspace and --project-id, defaulting to context.workspace and
+context.project.id. Search and identifier lookup use --workspace and do not
+require a project route value. Explicit route flags override context values;
+blank overrides and missing required context values fail before a request.
+Identifier lookup retains project_identifier and issue_identifier as
+positional arguments because they are human identifiers required by the API.
 
 Operations:
   search, get-by-identifier, list, create, get, update, delete
@@ -21,7 +24,8 @@ Operations:
 
 List supports cursor, per-page, fields, expand, external-id, external-source,
 and order-by. Search requires --search and supports limit, project-id, and
-workspace-search. Detail reads support expand, fields, external-id,
+workspace-search. Search's --project-id is only a query filter; it is not the
+project route override used by project-scoped commands. Detail reads support expand, fields, external-id,
 external-source, and order-by. Create requires --name; update sends only
 selected partial fields, including explicit false, zero, empty arrays, or
 JSON null when constructed through the request contract.
@@ -36,9 +40,9 @@ the seven explicitly inventoried core /issues/ compatibility routes. It does
 not include relation commands or any other deprecated route family.
 
 Examples:
-  planeshift work-item search my-workspace --search "release"
-  planeshift work-item list my-workspace 00000000-0000-0000-0000-000000000001
-  planeshift work-items get-by-identifier my-workspace ENG 123
-  planeshift work-item create my-workspace 00000000-0000-0000-0000-000000000001 --name "Document API"
-  planeshift work-item relations-create my-workspace 00000000-0000-0000-0000-000000000001 00000000-0000-0000-0000-000000000002 --relation-type relates_to --issue 00000000-0000-0000-0000-000000000003`
+  planeshift work-item search --workspace my-workspace --search "release"
+  planeshift work-item list --workspace my-workspace --project-id project-uuid
+  planeshift work-items get-by-identifier --workspace my-workspace ENG 123
+  planeshift work-item create --project-id project-uuid --name "Document API"
+  planeshift work-item relations-create --project-id project-uuid work-item-uuid --relation-type relates_to --issue related-item-uuid`
 }

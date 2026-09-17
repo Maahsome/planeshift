@@ -10,10 +10,11 @@ import (
 
 func newListCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:  "list workspace_slug project_id",
-		Args: cobra.ExactArgs(2),
+		Use:  "list",
+		Args: cobra.NoArgs,
 		RunE: runList,
 	}
+	addContextFlags(command)
 	command.Flags().String("cursor", "", "Cursor for the next or previous state page")
 	command.Flags().Int("per-page", 0, "States per page (Plane default 20; valid range 1-100)")
 	command.Flags().String("fields", "", "Comma-separated state fields to return")
@@ -45,11 +46,15 @@ func runList(command *cobra.Command, args []string) error {
 	if _, err := options.Query(); err != nil {
 		return err
 	}
+	route, err := routeContext(command)
+	if err != nil {
+		return err
+	}
 	client, err := stateClient()
 	if err != nil {
 		return err
 	}
-	page, _, err := client.List(command.Context(), args[0], args[1], options)
+	page, _, err := client.List(command.Context(), route.Workspace, route.ProjectID, options)
 	if err != nil {
 		return err
 	}

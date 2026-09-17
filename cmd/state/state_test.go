@@ -20,7 +20,7 @@ func TestStateCommandRegistrationAndFlags(t *testing.T) {
 	if command.Name() != config.StateCommandName || !command.HasAlias(config.StateCommandAlias) {
 		t.Fatalf("command = %q aliases %v", command.Name(), command.Aliases)
 	}
-	wantArgs := map[string]int{"list": 2, "create": 2, "get": 3, "update": 3, "delete": 3}
+	wantArgs := map[string]int{"list": 0, "create": 0, "get": 1, "update": 1, "delete": 1}
 	for name, count := range wantArgs {
 		child, _, err := command.Find([]string{name})
 		if err != nil || child == nil {
@@ -34,6 +34,11 @@ func TestStateCommandRegistrationAndFlags(t *testing.T) {
 		}
 	}
 	list, _, _ := command.Find([]string{"list"})
+	for _, flag := range []string{"workspace", "project-id"} {
+		if list.Flags().Lookup(flag) == nil {
+			t.Fatalf("list missing --%s", flag)
+		}
+	}
 	for _, flag := range []string{"cursor", "per-page", "fields", "expand"} {
 		if list.Flags().Lookup(flag) == nil {
 			t.Fatalf("list missing --%s", flag)
@@ -43,12 +48,25 @@ func TestStateCommandRegistrationAndFlags(t *testing.T) {
 		t.Fatal("list exposed unsupported --order-by")
 	}
 	create, _, _ := command.Find([]string{"create"})
+	for _, flag := range []string{"workspace", "project-id"} {
+		if create.Flags().Lookup(flag) == nil {
+			t.Fatalf("create missing --%s", flag)
+		}
+	}
 	for _, flag := range []string{"name", "color", "description", "sequence", "group", "is-triage", "default", "external-source", "external-id"} {
 		if create.Flags().Lookup(flag) == nil {
 			t.Fatalf("create missing --%s", flag)
 		}
 	}
 	update, _, _ := command.Find([]string{"update"})
+	for _, name := range []string{"get", "update", "delete"} {
+		child, _, _ := command.Find([]string{name})
+		for _, flag := range []string{"workspace", "project-id"} {
+			if child.Flags().Lookup(flag) == nil {
+				t.Fatalf("%s missing --%s", name, flag)
+			}
+		}
+	}
 	if update.Flags().Lookup("name") == nil || update.Flags().Lookup("color") == nil || update.Flags().Lookup("sequence") == nil {
 		t.Fatalf("update is missing documented fields")
 	}
@@ -62,7 +80,7 @@ func TestStateCommandsResolveFactoryLazilyAndUseCentralOutput(t *testing.T) {
 	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
 	fake := &fakeStateClient{response: `{"id":"state-1","name":"Started","future":{"keep":true}}`}
 	var calls int
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project"}}}
 	clientFactory = func() (plane.Client, error) { calls++; return fake, nil }
 	command := newGetCommand()
 	if calls != 0 {
@@ -70,7 +88,7 @@ func TestStateCommandsResolveFactoryLazilyAndUseCentralOutput(t *testing.T) {
 	}
 	command.SetContext(context.Background())
 	output := captureStateStdout(t, func() {
-		if err := runGet(command, []string{"team", "project", "state"}); err != nil {
+		if err := runGet(command, []string{"state"}); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -85,11 +103,59 @@ func TestStateCommandsResolveFactoryLazilyAndUseCentralOutput(t *testing.T) {
 	}
 }
 
+func TestStateContextDefaultsOverridesAndFailures(t *testing.T) {
+	previousConfig, previousFactory := c, clientFactory
+	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
+	fake := &fakeStateClient{response: `{"id":"state-1","name":"Started"}`}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "saved-workspace", Project: config.ProjectContext{ID: "saved-project"}}}
+	var calls int
+	clientFactory = func() (plane.Client, error) { calls++; return fake, nil }
+
+	defaultCommand := newGetCommand()
+	if err := runGet(defaultCommand, []string{"state"}); err != nil {
+		t.Fatal(err)
+	}
+	if fake.routes[0] != "/workspaces/saved-workspace/projects/saved-project/states/state/" {
+		t.Fatalf("context default route = %q", fake.routes[0])
+	}
+
+	override := newGetCommand()
+	if err := override.Flags().Set("workspace", "override-workspace"); err != nil {
+		t.Fatal(err)
+	}
+	if err := override.Flags().Set("project-id", "override-project"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGet(override, []string{"state"}); err != nil {
+		t.Fatal(err)
+	}
+	if fake.routes[1] != "/workspaces/override-workspace/projects/override-project/states/state/" {
+		t.Fatalf("override route = %q", fake.routes[1])
+	}
+	if c.Context.Workspace != "saved-workspace" || c.Context.Project.ID != "saved-project" {
+		t.Fatalf("command override changed context: %#v", c.Context)
+	}
+
+	blank := newGetCommand()
+	if err := blank.Flags().Set("project-id", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGet(blank, []string{"state"}); err == nil || calls != 2 {
+		t.Fatalf("blank override result=%v factory calls=%d", err, calls)
+	}
+
+	c.Context = config.Context{Workspace: "saved-workspace"}
+	missing := newGetCommand()
+	if err := runGet(missing, []string{"state"}); err == nil || calls != 2 {
+		t.Fatalf("missing project result=%v factory calls=%d", err, calls)
+	}
+}
+
 func TestStateCreateAndUpdatePreserveChangedValues(t *testing.T) {
 	previousConfig, previousFactory := c, clientFactory
 	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
 	fake := &fakeStateClient{response: `{"id":"state-1","name":"Started"}`}
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project"}}}
 	clientFactory = func() (plane.Client, error) { return fake, nil }
 
 	create := newCreateCommand()
@@ -102,7 +168,7 @@ func TestStateCreateAndUpdatePreserveChangedValues(t *testing.T) {
 		}
 	}
 	create.SetContext(context.Background())
-	if err := runCreate(create, []string{"team", "project"}); err != nil {
+	if err := runCreate(create, nil); err != nil {
 		t.Fatal(err)
 	}
 	assertBodyFields(t, fake.body, []string{"name", "color", "description", "sequence", "group", "is_triage", "default", "external_id"})
@@ -115,7 +181,7 @@ func TestStateCreateAndUpdatePreserveChangedValues(t *testing.T) {
 		}
 	}
 	update.SetContext(context.Background())
-	if err := runUpdate(update, []string{"team", "project", "state"}); err != nil {
+	if err := runUpdate(update, []string{"state"}); err != nil {
 		t.Fatal(err)
 	}
 	assertBodyFields(t, fake.body, []string{"description", "is_triage", "sequence"})
@@ -133,14 +199,14 @@ func TestStateListBuildsOnlyDocumentedQueryAndValidatesBeforeFactory(t *testing.
 	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
 	fake := &fakeStateClient{response: `{"results":[]}`}
 	var calls int
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project"}}}
 	clientFactory = func() (plane.Client, error) { calls++; return fake, nil }
 	invalid := newListCommand()
 	if err := invalid.Flags().Set("per-page", "101"); err != nil {
 		t.Fatal(err)
 	}
 	invalid.SetContext(context.Background())
-	if err := runList(invalid, []string{"team", "project"}); err == nil {
+	if err := runList(invalid, nil); err == nil {
 		t.Fatal("list accepted invalid page size")
 	}
 	if calls != 0 {
@@ -154,7 +220,7 @@ func TestStateListBuildsOnlyDocumentedQueryAndValidatesBeforeFactory(t *testing.
 		}
 	}
 	list.SetContext(context.Background())
-	if err := runList(list, []string{"team", "project"}); err != nil {
+	if err := runList(list, nil); err != nil {
 		t.Fatal(err)
 	}
 	if len(fake.queries) != 1 || fake.queries[0].Encode() != "cursor=20%3A1%3A0&expand=project&fields=id%2Cname&per_page=20" {
@@ -166,12 +232,12 @@ func TestStateDeleteIsQuietAndHelpIsSafe(t *testing.T) {
 	previousConfig, previousFactory := c, clientFactory
 	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
 	fake := &fakeStateClient{status: http.StatusNoContent}
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project"}}}
 	clientFactory = func() (plane.Client, error) { return fake, nil }
 	command := newDeleteCommand()
 	command.SetContext(context.Background())
 	output := captureStateStdout(t, func() {
-		if err := runDelete(command, []string{"team", "project", "state"}); err != nil {
+		if err := runDelete(command, []string{"state"}); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -179,7 +245,7 @@ func TestStateDeleteIsQuietAndHelpIsSafe(t *testing.T) {
 		t.Fatalf("delete output = %q, want empty", output)
 	}
 	helpText := strings.ToLower((&help.StateCmd{}).Long())
-	for _, phrase := range []string{"workspace slug", "project id", "list", "create", "update", "delete", "sequence", "204"} {
+	for _, phrase := range []string{"context.workspace", "context.project.id", "list", "create", "update", "delete", "sequence", "204"} {
 		if !strings.Contains(helpText, phrase) {
 			t.Fatalf("help omitted %q", phrase)
 		}

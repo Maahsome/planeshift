@@ -28,16 +28,16 @@ func TestProjectCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
 		t.Fatalf("project parent has operation-specific flags: %v", command.Flags().FlagUsages())
 	}
 	wantCommands := map[string]int{
-		"list": 1, "create": 1, "create-template": 1, "get": 2,
-		"update": 2, "archive": 2, "unarchive": 2, "delete": 2,
+		"list": 0, "create": 0, "create-template": 0, "get": 0,
+		"update": 0, "archive": 0, "unarchive": 0, "delete": 0,
 	}
 	for name, argumentCount := range wantCommands {
 		child, _, err := command.Find([]string{name})
 		if err != nil || child == nil {
 			t.Fatalf("find %s: command=%v err=%v", name, child, err)
 		}
-		if err := child.Args(child, make([]string, argumentCount-1)); err == nil {
-			t.Fatalf("%s accepted %d positional argument(s), want exact %d", name, argumentCount-1, argumentCount)
+		if err := child.Args(child, make([]string, argumentCount+1)); err == nil {
+			t.Fatalf("%s accepted %d positional argument(s), want exact %d", name, argumentCount+1, argumentCount)
 		}
 		if err := child.Args(child, make([]string, argumentCount)); err != nil {
 			t.Fatalf("%s rejected exact positional arguments: %v", name, err)
@@ -48,6 +48,9 @@ func TestProjectCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
 	}
 
 	list, _, _ := command.Find([]string{"list"})
+	if list.Flags().Lookup("workspace") == nil {
+		t.Fatal("list missing --workspace")
+	}
 	for _, name := range []string{"cursor", "per-page", "fields", "expand", "order-by"} {
 		if list.Flags().Lookup(name) == nil {
 			t.Fatalf("list missing --%s", name)
@@ -62,15 +65,29 @@ func TestProjectCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
 		}
 	}
 	create, _, _ := command.Find([]string{"create"})
+	if create.Flags().Lookup("workspace") == nil {
+		t.Fatal("create missing --workspace")
+	}
 	for _, name := range []string{"name", "identifier", "description", "icon-prop", "intake-view", "guest-view-all-features", "external-source", "is-time-tracking-enabled"} {
 		if create.Flags().Lookup(name) == nil {
 			t.Fatalf("create missing --%s", name)
 		}
 	}
 	template, _, _ := command.Find([]string{"create-template"})
+	if template.Flags().Lookup("workspace") == nil {
+		t.Fatal("create-template missing --workspace")
+	}
 	for _, name := range []string{"template-id", "name", "identifier", "description", "network", "project-lead"} {
 		if template.Flags().Lookup(name) == nil {
 			t.Fatalf("create-template missing --%s", name)
+		}
+	}
+	for _, operation := range []string{"get", "update", "archive", "unarchive", "delete"} {
+		child, _, _ := command.Find([]string{operation})
+		for _, flag := range []string{"workspace", "project-id"} {
+			if child.Flags().Lookup(flag) == nil {
+				t.Fatalf("%s missing --%s", operation, flag)
+			}
 		}
 	}
 }
@@ -78,7 +95,7 @@ func TestProjectCommandsAreRegisteredWithExactArgumentsAndFlags(t *testing.T) {
 func TestProjectHelpDocumentsSafeLifecycleAndDynamicOutput(t *testing.T) {
 	command := Init(&config.Config{}, nil)
 	help := command.Long
-	for _, phrase := range []string{"workspace slug", "project ID", "cursor pagination", "archive", "unarchive", "204", "icon-prop", "planeshift project", "planeshift projects"} {
+	for _, phrase := range []string{"saved context", "--workspace", "--project-id", "cursor pagination", "archive", "unarchive", "204", "icon-prop", "planeshift project", "planeshift projects"} {
 		if !strings.Contains(help, phrase) {
 			t.Fatalf("project help omitted %q: %s", phrase, help)
 		}
@@ -100,7 +117,7 @@ func TestProjectCommandsResolveFactoryOnlyDuringExecution(t *testing.T) {
 
 	var calls int
 	fake := &fakeProjectClient{responseJSON: `{"id":"project-1","name":"Project","identifier":"PRJ"}`}
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project-1"}}}
 	clientFactory = func() (plane.Client, error) {
 		calls++
 		return fake, nil
@@ -109,10 +126,10 @@ func TestProjectCommandsResolveFactoryOnlyDuringExecution(t *testing.T) {
 		t.Fatal("factory was invoked during setup")
 	}
 
-	command := &cobra.Command{}
+	command := newGetCommand()
 	command.SetContext(context.Background())
 	output := captureStdout(t, func() {
-		if err := runGet(command, []string{"team", "project-1"}); err != nil {
+		if err := runGet(command, nil); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -141,11 +158,11 @@ func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
 	clientFactory = func() (plane.Client, error) { return fake, nil }
 
 	t.Run("get defaults to JSON", func(t *testing.T) {
-		c = &config.Config{}
-		command := &cobra.Command{}
+		c = &config.Config{Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project-1"}}}
+		command := newGetCommand()
 		command.SetContext(context.Background())
 		output := captureStdout(t, func() {
-			if err := runGet(command, []string{"team", "project-1"}); err != nil {
+			if err := runGet(command, nil); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -156,11 +173,11 @@ func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
 	})
 
 	t.Run("get preserves raw JSON", func(t *testing.T) {
-		c = &config.Config{OutputFormat: "raw"}
-		command := &cobra.Command{}
+		c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project-1"}}}
+		command := newGetCommand()
 		command.SetContext(context.Background())
 		output := captureStdout(t, func() {
-			if err := runGet(command, []string{"team", "project-1"}); err != nil {
+			if err := runGet(command, nil); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -171,9 +188,8 @@ func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
 	})
 
 	t.Run("create renders text summary", func(t *testing.T) {
-		c = &config.Config{OutputFormat: "text"}
-		command := &cobra.Command{}
-		addCreateFlags(command)
+		c = &config.Config{OutputFormat: "text", Context: config.Context{Workspace: "team"}}
+		command := newCreateCommand()
 		if err := command.Flags().Set("name", "Project X"); err != nil {
 			t.Fatal(err)
 		}
@@ -181,7 +197,7 @@ func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
 			t.Fatal(err)
 		}
 		output := captureStdout(t, func() {
-			if err := runCreate(command, []string{"team"}); err != nil {
+			if err := runCreate(command, nil); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -196,13 +212,12 @@ func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
 	})
 
 	t.Run("list renders ordered table rows", func(t *testing.T) {
-		c = &config.Config{OutputFormat: "table"}
+		c = &config.Config{OutputFormat: "table", Context: config.Context{Workspace: "team"}}
 		fake.responseJSON = `{"next_cursor":"next","results":[{"id":"project-1","identifier":"ONE","name":"First","workspace":null,"network":null},{"id":"project-2","identifier":"TWO","name":"Second","workspace":"workspace-2","network":0}]}`
-		command := &cobra.Command{}
-		addListFlags(command)
+		command := newListCommand()
 		command.SetContext(context.Background())
 		output := captureStdout(t, func() {
-			if err := runList(command, []string{"team"}); err != nil {
+			if err := runList(command, nil); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -220,6 +235,56 @@ func TestProjectBodyCommandsUseConfiguredProjectOutputFormats(t *testing.T) {
 			t.Fatalf("table output leaked page metadata: %q", output)
 		}
 	})
+}
+
+func TestProjectContextDefaultsOverridesAndFailures(t *testing.T) {
+	previousConfig, previousFactory := c, clientFactory
+	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
+	fake := &fakeProjectClient{responseJSON: `{"id":"project-1","name":"Project"}`}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "saved-workspace", Project: config.ProjectContext{ID: "saved-project"}}}
+	var calls int
+	clientFactory = func() (plane.Client, error) { calls++; return fake, nil }
+
+	list := newListCommand()
+	list.SetContext(context.Background())
+	if err := runList(list, nil); err != nil {
+		t.Fatal(err)
+	}
+	if fake.routes[0] != "/workspaces/saved-workspace/projects/" {
+		t.Fatalf("context default route = %q", fake.routes[0])
+	}
+
+	get := newGetCommand()
+	if err := get.Flags().Set("workspace", "override-workspace"); err != nil {
+		t.Fatal(err)
+	}
+	if err := get.Flags().Set("project-id", "override-project"); err != nil {
+		t.Fatal(err)
+	}
+	get.SetContext(context.Background())
+	if err := runGet(get, nil); err != nil {
+		t.Fatal(err)
+	}
+	if fake.routes[1] != "/workspaces/override-workspace/projects/override-project/" {
+		t.Fatalf("override route = %q", fake.routes[1])
+	}
+	if c.Context.Workspace != "saved-workspace" || c.Context.Project.ID != "saved-project" {
+		t.Fatalf("command override changed context: %#v", c.Context)
+	}
+
+	blank := newGetCommand()
+	if err := blank.Flags().Set("workspace", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGet(blank, nil); err == nil || calls != 2 {
+		t.Fatalf("blank override result=%v factory calls=%d", err, calls)
+	}
+
+	missing := newGetCommand()
+	c.Context = config.Context{}
+	if err := runGet(missing, nil); err == nil || calls != 2 {
+		t.Fatalf("missing context result=%v factory calls=%d", err, calls)
+	}
 }
 
 func assertProjectOutputFields(t *testing.T, output string) {
@@ -244,31 +309,30 @@ func TestProjectListValidationHappensBeforeFactoryAndOutputUsesConfig(t *testing
 	})
 
 	var calls int
-	c = &config.Config{OutputFormat: "json"}
+	c = &config.Config{OutputFormat: "json", Context: config.Context{Workspace: "team"}}
 	clientFactory = func() (plane.Client, error) {
 		calls++
 		return &fakeProjectClient{}, nil
 	}
-	invalid := &cobra.Command{}
-	invalid.Flags().Int("per-page", 0, "")
+	invalid := newListCommand()
 	if err := invalid.Flags().Set("per-page", "0"); err != nil {
 		t.Fatal(err)
 	}
-	if err := runList(invalid, []string{"team"}); err == nil || calls != 0 {
+	if err := runList(invalid, nil); err == nil || calls != 0 {
 		t.Fatalf("invalid list result = %v, factory calls = %d", err, calls)
 	}
 
 	fake := &fakeProjectClient{responseJSON: `{"results":[],"next_cursor":null,"future":true}`}
 	clientFactory = func() (plane.Client, error) { return fake, nil }
-	valid := &cobra.Command{}
+	valid := newListCommand()
 	valid.SetContext(context.Background())
-	valid.Flags().String("cursor", "cursor:1", "")
-	valid.Flags().Int("per-page", 20, "")
-	valid.Flags().String("fields", "id,name", "")
-	valid.Flags().String("expand", "members", "")
-	valid.Flags().String("order-by", "-created_at", "")
+	_ = valid.Flags().Set("cursor", "cursor:1")
+	_ = valid.Flags().Set("per-page", "20")
+	_ = valid.Flags().Set("fields", "id,name")
+	_ = valid.Flags().Set("expand", "members")
+	_ = valid.Flags().Set("order-by", "-created_at")
 	output := captureStdout(t, func() {
-		if err := runList(valid, []string{"team"}); err != nil {
+		if err := runList(valid, nil); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -288,15 +352,23 @@ func TestProjectLifecycle204CommandsAreQuiet(t *testing.T) {
 		clientFactory = previousFactory
 	})
 	fake := &fakeProjectClient{statusCode: http.StatusNoContent}
-	c = &config.Config{OutputFormat: "json"}
+	c = &config.Config{OutputFormat: "json", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project"}}}
 	clientFactory = func() (plane.Client, error) { return fake, nil }
-	command := &cobra.Command{}
-	command.SetContext(context.Background())
 	for name, run := range map[string]func(*cobra.Command, []string) error{
 		"archive": runArchive, "unarchive": runUnarchive, "delete": runDelete,
 	} {
+		var command *cobra.Command
+		switch name {
+		case "archive":
+			command = newArchiveCommand()
+		case "unarchive":
+			command = newUnarchiveCommand()
+		case "delete":
+			command = newDeleteCommand()
+		}
+		command.SetContext(context.Background())
 		output := captureStdout(t, func() {
-			if err := run(command, []string{"team", "project"}); err != nil {
+			if err := run(command, nil); err != nil {
 				t.Fatalf("%s: %v", name, err)
 			}
 		})
@@ -317,11 +389,10 @@ func TestProjectCreateAndUpdatePreserveChangedFalseZeroAndJSONFlags(t *testing.T
 		clientFactory = previousFactory
 	})
 	fake := &fakeProjectClient{responseJSON: `{"id":"project"}`}
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team", Project: config.ProjectContext{ID: "project"}}}
 	clientFactory = func() (plane.Client, error) { return fake, nil }
 
-	create := &cobra.Command{}
-	addCreateFlags(create)
+	create := newCreateCommand()
 	for name, value := range map[string]string{
 		"name": "Project", "identifier": "PRJ", "module-view": "false", "archive-in": "0",
 		"icon-prop": `{"color":"blue"}`,
@@ -330,7 +401,7 @@ func TestProjectCreateAndUpdatePreserveChangedFalseZeroAndJSONFlags(t *testing.T
 			t.Fatal(err)
 		}
 	}
-	if err := runCreate(create, []string{"team"}); err != nil {
+	if err := runCreate(create, nil); err != nil {
 		t.Fatal(err)
 	}
 	body, err := json.Marshal(fake.lastBody)
@@ -346,8 +417,7 @@ func TestProjectCreateAndUpdatePreserveChangedFalseZeroAndJSONFlags(t *testing.T
 	}
 
 	fake.lastBody = nil
-	update := &cobra.Command{}
-	addUpdateFlags(update)
+	update := newUpdateCommand()
 	for name, value := range map[string]string{
 		"cycle-view": "false", "close-in": "0", "default-state": "", "icon-prop": "null",
 	} {
@@ -355,7 +425,7 @@ func TestProjectCreateAndUpdatePreserveChangedFalseZeroAndJSONFlags(t *testing.T
 			t.Fatal(err)
 		}
 	}
-	if err := runUpdate(update, []string{"team", "project"}); err != nil {
+	if err := runUpdate(update, nil); err != nil {
 		t.Fatal(err)
 	}
 	body, err = json.Marshal(fake.lastBody)
@@ -379,23 +449,23 @@ func TestProjectInvalidIconIsRejectedBeforeFactory(t *testing.T) {
 		clientFactory = previousFactory
 	})
 	var calls int
-	c = &config.Config{OutputFormat: "raw"}
+	c = &config.Config{OutputFormat: "raw", Context: config.Context{Workspace: "team"}}
 	clientFactory = func() (plane.Client, error) {
 		calls++
 		return &fakeProjectClient{}, nil
 	}
-	command := &cobra.Command{}
-	addCreateFlags(command)
+	command := newCreateCommand()
 	_ = command.Flags().Set("name", "Project")
 	_ = command.Flags().Set("identifier", "PRJ")
 	_ = command.Flags().Set("icon-prop", "not-json")
-	if err := runCreate(command, []string{"team"}); err == nil || calls != 0 {
+	if err := runCreate(command, nil); err == nil || calls != 0 {
 		t.Fatalf("invalid icon result = %v, factory calls = %d", err, calls)
 	}
 }
 
 type fakeProjectClient struct {
 	calls           int
+	routes          []string
 	query           url.Values
 	responseJSON    string
 	statusCode      int
@@ -405,6 +475,7 @@ type fakeProjectClient struct {
 
 func (f *fakeProjectClient) Do(_ context.Context, method, route string, query url.Values, body any, _ http.Header, destination any) (plane.Response, error) {
 	f.calls++
+	f.routes = append(f.routes, route)
 	f.query = query
 	f.lastBody = body
 	f.lastDestination = destination

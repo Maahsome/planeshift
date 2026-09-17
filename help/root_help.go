@@ -32,6 +32,10 @@ func (r *RootCmd) Long() string {
   shell-friendly label such as:
 
     my-workspace | Demo Project
+
+  Project, state, and project-scoped work-item commands consume the saved
+  context when --workspace or --project-id is omitted. Use those flags for a
+  one-command route override; overrides are not saved.
 `
 
 	return longText

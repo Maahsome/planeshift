@@ -1,14 +1,23 @@
-# Work 04: Implement Plane API — Work Items
+# Codex Plan
+
+# Work Ticket
+
+ID: PSFT-13-20260916-0808-F2D23D
+Title: work-items
+
+## Description
+
+### Work 04: Implement Plane API — Work Items
 
 Use this file as the implementation prompt for the Work Items slice of `planeshift` (Jira ticket PSFT-13).
 
-## Prompt
+#### Prompt
 
 You are an AI coding agent working in the `planeshift` repository. Read `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `LOCAL_BUILD.md`, `work/README.md`, [`00-api-client-foundation.md`](./00-api-client-foundation.md), and [`01-projects.md`](./01-projects.md) before editing.
 
 Implement the public Work Items resource completely. The source-controlled [`PUBLIC_API.txt`](../PUBLIC_API.txt) is authoritative for route inclusion. This prompt owns the seven current core work-item methods, the two current relation methods, and the seven explicitly listed deprecated `/issues/` core aliases: exactly 16 methods. The current `/work-items/` routes are primary; aliases are a bounded compatibility inventory and must not become the preferred route family.
 
-### Documentation to implement
+##### Documentation to implement
 
 - [Work Items overview](https://developers.plane.so/api-reference/issue/overview.md)
 - [Create a work item](https://developers.plane.so/api-reference/issue/add-issue.md)
@@ -20,9 +29,9 @@ Implement the public Work Items resource completely. The source-controlled [`PUB
 - [Delete a work item](https://developers.plane.so/api-reference/issue/delete-issue.md)
 - The relation methods and the compatibility aliases are included by the public inventory below; do not add any route outside the matrix.
 
-### Public route matrix — 16 methods
+##### Public route matrix — 16 methods
 
-#### Primary `/work-items/` routes — 9 methods
+###### Primary `/work-items/` routes — 9 methods
 
 | # | Method | Exact path | Path parameters / role |
 |---:|---|---|---|
@@ -36,7 +45,7 @@ Implement the public Work Items resource completely. The source-controlled [`PUB
 | 8 | GET | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/relations/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; relation collection |
 | 9 | POST | `/api/v1/workspaces/{slug}/projects/{project_id}/work-items/{work_item_id}/relations/` | `{slug}` workspace slug, `{project_id}` project UUID, `{work_item_id}` work-item UUID; create relation |
 
-#### Deprecated `/issues/` compatibility aliases — 7 methods
+###### Deprecated `/issues/` compatibility aliases — 7 methods
 
 | # | Method | Exact path | Path parameters / role |
 |---:|---|---|---|
@@ -48,13 +57,13 @@ Implement the public Work Items resource completely. The source-controlled [`PUB
 | 15 | PATCH | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID; compatibility update |
 | 16 | DELETE | `/api/v1/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/` | `{slug}` workspace slug, `{project_id}` project UUID, `{issue_id}` issue UUID; compatibility delete |
 
-### Dependencies and boundaries
+##### Dependencies and boundaries
 
 - Reuse the shared client, configuration, authentication, pagination, error, and output contract from [`00-api-client-foundation.md`](./00-api-client-foundation.md); this prompt owns core work items and relations only.
 - Links, comments, activity, and attachments—including their matching compatibility families—belong to [`11-work-item-links.md`](./11-work-item-links.md), [`12-work-item-activity.md`](./12-work-item-activity.md), [`13-work-item-comments.md`](./13-work-item-comments.md), and [`14-work-item-attachments.md`](./14-work-item-attachments.md).
 - Preserve the exact distinction between `{work_item_id}` on primary routes and `{issue_id}` on deprecated aliases. Do not infer paths from the legacy documentation directory name.
 
-### Required implementation behavior
+##### Required implementation behavior
 
 - Read the linked operation pages and implement their exact request body, query parameters, OAuth scope, success status, response shape, and documented errors without changing the route matrix.
 - Add typed request/response models with presence-aware PATCH fields and lossless handling for nullable or dynamic JSON values.
@@ -62,10 +71,12 @@ Implement the public Work Items resource completely. The source-controlled [`PUB
 - Keep API keys and sensitive response fields out of logs and accidental default output. Return bounded structured errors for JSON, empty, malformed, and non-JSON responses.
 - Add deterministic `httptest` coverage for all 16 methods, including method/path/query/auth/body/decoding/status behavior and representative errors. Do not require live Plane credentials.
 
-### Definition of done
+##### Definition of done
 
 - Every method in both matrices has one client method, CLI surface, typed contract, and deterministic test.
 - Primary and compatibility route behavior is tested separately; pagination, nullable fields, dynamic JSON, and 204 responses are verified where applicable.
 - `gofmt` is clean and `CI=true go test -count=1 ./...` passes.
 - The documented build workflow in `LOCAL_BUILD.md` remains valid.
 - Changes stay within this resource slice and focused shared test/model support.
+
+Implementation plan has been generated and saved to [plans/implementation-plan-work-items.md](../../plans/implementation-plan-work-items.md)

@@ -10,3 +10,12 @@ func TestProjectCommandNames(t *testing.T) {
 		t.Fatalf("ProjectCommandAlias = %q, want projects", ProjectCommandAlias)
 	}
 }
+
+func TestWorkItemCommandNames(t *testing.T) {
+	if WorkItemCommandName != "work-item" {
+		t.Fatalf("WorkItemCommandName = %q, want work-item", WorkItemCommandName)
+	}
+	if WorkItemCommandAlias != "work-items" {
+		t.Fatalf("WorkItemCommandAlias = %q, want work-items", WorkItemCommandAlias)
+	}
+}

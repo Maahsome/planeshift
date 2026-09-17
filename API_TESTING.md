@@ -59,6 +59,27 @@ request/response against the same contract. The direct presigned S3 upload step 
 outside the Plane API host and should be tested using the URL and form fields returned
 by Plane's upload-credential operation.
 
+## CLI functional workflow
+
+The deterministic unit and `httptest` suites remain the default verification
+for route methods, query/body contracts, response models, status handling, and
+secret-safe errors. Prism validates those HTTP contracts locally. The optional
+CLI-level workflow in [`functional/README.md`](functional/README.md) runs the
+built binary through its real Cobra/configuration/Plane-client/output path:
+
+```sh
+PLANE_FUNCTIONAL_RUN=true PLANE_API_URL=http://localhost:4010 \
+PLANE_AUTH_MODE=api-key PLANE_API_KEY=prism-test-key \
+PLANE_FUNCTIONAL_WORKSPACE_SLUG=functional-workspace mise function-test
+```
+
+Use a stateful disposable non-production workspace or a Prism proxy for the
+full lifecycle. The task requires explicit opt-in, a target URL, credentials,
+and workspace slug; it isolates `XDG_CONFIG_HOME` and cleans only generated
+IDs. Legacy `/issues/` and Business-license template calls require their
+separate opt-ins and report visible skips when the target lacks those routes or
+features.
+
 ## Contract maintenance
 
 Update the snapshot from the official [Plane API reference](https://developers.plane.so/api-reference/introduction)

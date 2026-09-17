@@ -1,7 +1,8 @@
 package help
 
 type HelpCmd struct {
-	ProjectCmd *ProjectCmd
-	VersionCmd *VersionCmd
-	RootCmd    *RootCmd
+	ProjectCmd  *ProjectCmd
+	WorkItemCmd *WorkItemCmd
+	VersionCmd  *VersionCmd
+	RootCmd     *RootCmd
 }

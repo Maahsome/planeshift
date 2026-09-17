@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -370,6 +371,70 @@ func workItemSequence(t *testing.T, data json.RawMessage) string {
 	return jsonStringField(t, data, "sequence_id")
 }
 
+var uniqueNameSequence uint64
+
 func uniqueName(prefix string) string {
-	return fmt.Sprintf("planeshift-functional-%s-%d-%d", prefix, time.Now().UnixNano(), os.Getpid())
+	normalizedPrefix := normalizeNamePrefix(prefix)
+	if normalizedPrefix == "" {
+		normalizedPrefix = "generated"
+	}
+	sequence := atomic.AddUint64(&uniqueNameSequence, 1)
+	return fmt.Sprintf("planeshiftfunctional%s%d%d%d", normalizedPrefix, time.Now().UnixNano(), os.Getpid(), sequence)
+}
+
+// Plane project names must contain only alphanumeric characters. Keep the
+// helper usable for work-item names too so every generated test name follows
+// the same safe convention.
+func normalizeNamePrefix(prefix string) string {
+	var normalized strings.Builder
+	normalized.Grow(len(prefix))
+	for _, character := range prefix {
+		switch {
+		case character >= 'a' && character <= 'z':
+			normalized.WriteRune(character)
+		case character >= 'A' && character <= 'Z':
+			normalized.WriteRune(character)
+		case character >= '0' && character <= '9':
+			normalized.WriteRune(character)
+		}
+	}
+	return normalized.String()
+}
+
+func TestUniqueNameProducesSafeDistinctValues(t *testing.T) {
+	tests := []struct {
+		name       string
+		prefix     string
+		normalized string
+	}{
+		{name: "project", prefix: "project", normalized: "project"},
+		{name: "template project", prefix: "template-project", normalized: "templateproject"},
+		{name: "work items project", prefix: "work-items-project", normalized: "workitemsproject"},
+		{name: "empty after normalization", prefix: "---", normalized: "generated"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := uniqueName(test.prefix)
+			if got == "" {
+				t.Fatal("uniqueName returned an empty value")
+			}
+			if !strings.HasPrefix(got, "planeshiftfunctional"+test.normalized) {
+				t.Fatalf("uniqueName(%q) = %q, want normalized prefix %q", test.prefix, got, test.normalized)
+			}
+			for _, character := range got {
+				if !((character >= 'a' && character <= 'z') ||
+					(character >= 'A' && character <= 'Z') ||
+					(character >= '0' && character <= '9')) {
+					t.Fatalf("uniqueName(%q) contains non-alphanumeric character %q: %q", test.prefix, character, got)
+				}
+			}
+		})
+	}
+
+	first := uniqueName("project")
+	second := uniqueName("project")
+	if first == second {
+		t.Fatalf("consecutive uniqueName calls returned the same value %q", first)
+	}
 }

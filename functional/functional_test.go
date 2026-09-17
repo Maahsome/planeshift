@@ -174,7 +174,7 @@ func TestProjectLifecycle(t *testing.T) {
 		t.Fatalf("project get did not return generated project %s: %s", project.id, got)
 	}
 
-	updatedName := name + "-updated"
+	updatedName := uniqueName("project-updated")
 	updated, _ := runner.RunJSON(t, "project", "update", config.WorkspaceSlug, project.id, "--name", updatedName)
 	if !jsonContainsString(updated, updatedName) {
 		t.Fatalf("project update omitted updated name %q: %s", updatedName, updated)

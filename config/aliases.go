@@ -9,4 +9,8 @@ const (
 	WorkItemCommandName = "work-item"
 	// WorkItemCommandAlias is the plural alias for the Work Item command.
 	WorkItemCommandAlias = "work-items"
+	// StateCommandName is the canonical singular Work Item State command name.
+	StateCommandName = "state"
+	// StateCommandAlias is the plural alias for the Work Item State command.
+	StateCommandAlias = "states"
 )

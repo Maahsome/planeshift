@@ -19,3 +19,12 @@ func TestWorkItemCommandNames(t *testing.T) {
 		t.Fatalf("WorkItemCommandAlias = %q, want work-items", WorkItemCommandAlias)
 	}
 }
+
+func TestStateCommandNames(t *testing.T) {
+	if StateCommandName != "state" {
+		t.Fatalf("StateCommandName = %q, want state", StateCommandName)
+	}
+	if StateCommandAlias != "states" {
+		t.Fatalf("StateCommandAlias = %q, want states", StateCommandAlias)
+	}
+}

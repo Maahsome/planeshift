@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	contextcommand "planeshift/cmd/context"
+	labelcommand "planeshift/cmd/label"
 	projectcommand "planeshift/cmd/project"
 	statecommand "planeshift/cmd/state"
 	versioncommand "planeshift/cmd/version"
@@ -112,6 +113,7 @@ func addSubCommands() {
 		contextcommand.Init(c, newPlaneClientFactory(c), newContextSaver(viper.GetViper(), c), nil),
 		projectcommand.Init(c, newPlaneClientFactory(c)),
 		statecommand.Init(c, newPlaneClientFactory(c)),
+		labelcommand.Init(c, newPlaneClientFactory(c)),
 		workitemcommand.Init(c, newPlaneClientFactory(c)),
 		versioncommand.Init(c),
 	)

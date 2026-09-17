@@ -13,6 +13,10 @@ const (
 	StateCommandName = "state"
 	// StateCommandAlias is the plural alias for the Work Item State command.
 	StateCommandAlias = "states"
+	// LabelCommandName is the canonical singular project label command name.
+	LabelCommandName = "label"
+	// LabelCommandAlias is the plural alias for the project label command.
+	LabelCommandAlias = "labels"
 	// ContextCommandName is the canonical local context command name.
 	ContextCommandName = "context"
 )

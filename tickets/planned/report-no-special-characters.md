@@ -1,0 +1,14 @@
+# Codex Plan
+
+# Work Ticket
+
+ID: PSFT-13-20260916-1859-66AF26
+Title: no special characters
+
+## Description
+In the test code we just added, it is generating project names with `-` dashes
+and there are no special characters allowed in the project names.  We need to 
+update the code that generates the names for projects to not use special 
+characters.
+
+Implementation plan has been generated and saved to [plans/implementation-plan-no-special-characters.md](../../plans/implementation-plan-no-special-characters.md)

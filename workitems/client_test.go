@@ -39,7 +39,7 @@ func TestClientOperationMatrixUsesExactCurrentAndLegacyRoutes(t *testing.T) {
 	itemJSON := `{"id":"item-1","name":"Item","parent":null,"expanded":{"id":"state-1"}}`
 	searchJSON := `{"issues":[{"id":"item-1","name":"Item","sequence_id":1,"future":{"keep":true}}]}`
 	relationPageJSON := `{"next_cursor":"next","results":[{"id":"relation-1","relation_type":"relates_to","future":"keep"}]}`
-	relationCreateJSON := `[[{"id":"relation-1","relation_type":"relates_to","future":"keep"}]]`
+	relationCreateJSON := `[{"id":"relation-1","project_id":"project-1","sequence_id":2,"relation_type":"relates_to","name":"Related item","created_at":"2026-09-17T02:25:15.676423Z","updated_at":"2026-09-17T02:25:15.676434Z","future":"keep"}]`
 
 	tests := []struct {
 		name     string
@@ -96,7 +96,10 @@ func TestClientOperationMatrixUsesExactCurrentAndLegacyRoutes(t *testing.T) {
 			}},
 		{name: "relations create", method: http.MethodPost, path: "/api/v1/workspaces/team%20space/projects/project%2Fid/work-items/work%2Fitem/relations/", body: relation, response: relationCreateJSON, status: http.StatusCreated,
 			call: func(ctx context.Context, c *Client) error {
-				_, _, err := c.CreateRelation(ctx, testWorkspace, testProject, testWorkItem, relation)
+				result, response, err := c.CreateRelation(ctx, testWorkspace, testProject, testWorkItem, relation)
+				if err == nil && (response.StatusCode != http.StatusCreated || len(result) != 1 || result[0].ID != "relation-1" || result[0].RelationType == nil || *result[0].RelationType != "relates_to") {
+					return fmt.Errorf("relation response = %#v/%#v", result, response)
+				}
 				return err
 			}},
 		{name: "legacy search", method: http.MethodGet, path: "/api/v1/workspaces/team%20space/issues/search/", query: url.Values{"search": {"item"}}, response: searchJSON, status: http.StatusOK,

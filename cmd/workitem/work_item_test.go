@@ -129,6 +129,37 @@ func TestWorkItemUpdatePreservesExplicitFlagValues(t *testing.T) {
 	}
 }
 
+func TestRelationsCreateOutputsFlatJSONResponse(t *testing.T) {
+	previousConfig, previousFactory := c, clientFactory
+	t.Cleanup(func() { c, clientFactory = previousConfig, previousFactory })
+	fake := &fakeWorkItemClient{response: `[{"id":"relation-1","relation_type":"relates_to","future":{"keep":true}}]`}
+	c = &config.Config{OutputFormat: "raw"}
+	clientFactory = func() (plane.Client, error) { return fake, nil }
+	command := newRelationsCreateCommand()
+	if err := command.Flags().Set("relation-type", "relates_to"); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Flags().Set("issue", "issue-1"); err != nil {
+		t.Fatal(err)
+	}
+	command.SetContext(context.Background())
+	output := captureWorkItemStdout(t, func() {
+		if err := runRelationsCreate(command, []string{"team", "project", "item"}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if len(fake.routes) != 1 || fake.routes[0] != "/workspaces/team/projects/project/work-items/item/relations/" {
+		t.Fatalf("relation route = %v", fake.routes)
+	}
+	var relations []map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(output), &relations); err != nil {
+		t.Fatalf("output = %q: %v", output, err)
+	}
+	if len(relations) != 1 || string(relations[0]["id"]) != `"relation-1"` || string(relations[0]["relation_type"]) != `"relates_to"` {
+		t.Fatalf("relation output = %s", output)
+	}
+}
+
 func TestWorkItemHelpIsSafe(t *testing.T) {
 	help := Init(&config.Config{}, nil).Long
 	for _, phrase := range []string{"workspace slug", "project ID", "search", "relations", "legacy", "204", "/work-items/"} {

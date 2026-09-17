@@ -120,7 +120,7 @@ func (c *Client) ListRelations(ctx context.Context, workspaceSlug, projectID, wo
 }
 
 // CreateRelation creates relations for a current work item. OAuth scope:
-// projects.work_items:write. Plane returns a nested JSON array with 201.
+// projects.work_items:write. Plane returns a flat relation array with HTTP 201.
 func (c *Client) CreateRelation(ctx context.Context, workspaceSlug, projectID, workItemID string, request CreateWorkItemRelationRequest) (WorkItemRelationCreateResponse, plane.Response, error) {
 	if err := request.validate(); err != nil {
 		return nil, plane.Response{}, err

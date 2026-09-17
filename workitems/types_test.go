@@ -50,6 +50,39 @@ func TestWorkItemPageSearchAndRelationsRetainUnknowns(t *testing.T) {
 	}
 }
 
+func TestWorkItemRelationCreateResponseUsesFlatLosslessArray(t *testing.T) {
+	data := []byte(`[{"id":"relation-1","project_id":"project-1","sequence_id":2,"relation_type":"relates_to","name":"Related item","state_id":"state-1","priority":"none","created_by":"user-1","created_at":"2026-09-17T02:25:15.676423Z","updated_at":"2026-09-17T02:25:15.676434Z","updated_by":"user-1","future":{"keep":true}}]`)
+	var response WorkItemRelationCreateResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		t.Fatal(err)
+	}
+	if len(response) != 1 {
+		t.Fatalf("relation count = %d, want 1", len(response))
+	}
+	relation := response[0]
+	if relation.ID != "relation-1" || relation.RelationType == nil || *relation.RelationType != "relates_to" {
+		t.Fatalf("relation identity = %#v", relation)
+	}
+	if relation.CreatedAt == nil || *relation.CreatedAt != "2026-09-17T02:25:15.676423Z" || relation.UpdatedAt == nil || *relation.UpdatedAt != "2026-09-17T02:25:15.676434Z" {
+		t.Fatalf("relation timestamps = %#v", relation)
+	}
+	if string(relation.ProjectID) != `"project-1"` || string(relation.SequenceID) != "2" || relation.Unknown["future"] == nil {
+		t.Fatalf("relation dynamic/unknown fields = %#v", relation)
+	}
+
+	roundTrip, err := json.Marshal(response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var flat []json.RawMessage
+	if err := json.Unmarshal(roundTrip, &flat); err != nil {
+		t.Fatal(err)
+	}
+	if len(flat) != 1 || len(flat[0]) == 0 || flat[0][0] != '{' || strings.Contains(string(roundTrip), "[[") || !strings.Contains(string(roundTrip), `"future":{"keep":true}`) {
+		t.Fatalf("flat lossless round trip = %s", roundTrip)
+	}
+}
+
 func TestRequestPresenceAndWireNames(t *testing.T) {
 	falseValue := false
 	zero := 0

@@ -546,9 +546,9 @@ func (r CreateWorkItemRelationRequest) validate() error {
 	return nil
 }
 
-// WorkItemRelationCreateResponse preserves the documented nested 201 JSON
-// response shape instead of flattening it into a single relation.
-type WorkItemRelationCreateResponse [][]WorkItemRelation
+// WorkItemRelationCreateResponse is the flat array returned by Plane for a
+// successful relation-create request.
+type WorkItemRelationCreateResponse []WorkItemRelation
 
 // ListOptions are the documented project collection controls.
 type ListOptions struct {

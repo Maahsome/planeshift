@@ -8384,9 +8384,7 @@ components:
     WorkItemRelationCreateResponse:
       type: array
       items:
-        type: array
-        items:
-          $ref: '#/components/schemas/WorkItemRelation'
+        $ref: '#/components/schemas/WorkItemRelation'
     ErrorObject:
       type: object
       additionalProperties: true

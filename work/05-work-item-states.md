@@ -1,6 +1,6 @@
 # Work 05: Implement Plane API — Work Item States
 
-Use this file as the implementation prompt for the Work Item States slice of `planeshift` (Jira ticket PSFT-11).
+Use this file as the implementation prompt for the Work Item States slice of `planeshift` (Jira ticket PSFT-14).
 
 ## Prompt
 

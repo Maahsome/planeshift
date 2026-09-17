@@ -4776,11 +4776,12 @@ paths:
           $ref: '#/components/responses/NoContent'
         default:
           $ref: '#/components/responses/Error'
-  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/states/':
+  '/api/v1/workspaces/{slug}/projects/{project_id}/states/':
     parameters:
-      - name: 'workspace_slug'
+      - name: 'slug'
         in: path
         required: true
+        description: Workspace slug representing the unique workspace identifier.
         schema:
           type: string
       - name: 'project_id'
@@ -4806,7 +4807,11 @@ paths:
         - $ref: '#/components/parameters/Expand'
       responses:
         '200':
-          $ref: '#/components/responses/PaginatedJson'
+          description: Cursor-paginated state response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatePage'
         default:
           $ref: '#/components/responses/Error'
     post:
@@ -4821,23 +4826,26 @@ paths:
       x-plane-documentation:
         - https://developers.plane.so/api-reference/state/add-state.md
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JsonValue'
+              $ref: '#/components/schemas/StateCreate'
       responses:
         '200':
-          $ref: '#/components/responses/Json'
-        '201':
-          $ref: '#/components/responses/Json'
+          description: Created state response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/State'
         default:
           $ref: '#/components/responses/Error'
-  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/states/{state_id}/':
+  '/api/v1/workspaces/{slug}/projects/{project_id}/states/{state_id}/':
     parameters:
-      - name: 'workspace_slug'
+      - name: 'slug'
         in: path
         required: true
+        description: Workspace slug representing the unique workspace identifier.
         schema:
           type: string
       - name: 'project_id'
@@ -4861,14 +4869,13 @@ paths:
       operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_states_state_id
       x-plane-documentation:
         - https://developers.plane.so/api-reference/state/get-state-detail.md
-      parameters:
-        - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/PerPage'
-        - $ref: '#/components/parameters/Fields'
-        - $ref: '#/components/parameters/Expand'
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          description: State response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/State'
         default:
           $ref: '#/components/responses/Error'
     patch:
@@ -4883,14 +4890,18 @@ paths:
       x-plane-documentation:
         - https://developers.plane.so/api-reference/state/update-state-detail.md
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JsonValue'
+              $ref: '#/components/schemas/StateUpdate'
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          description: Updated state response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/State'
         default:
           $ref: '#/components/responses/Error'
     delete:
@@ -8228,6 +8239,90 @@ components:
         results:
           - id: 00000000-0000-0000-0000-000000000001
             name: Prism example
+    State:
+      type: object
+      description: Lossless Work Item State response; future response fields are permitted.
+      additionalProperties: true
+      properties:
+        id: {type: string, nullable: true}
+        created_at: {type: string, nullable: true}
+        updated_at: {type: string, nullable: true}
+        name: {type: string, nullable: true}
+        description: {type: string, nullable: true}
+        color: {type: string, nullable: true}
+        workspace_slug: {type: string, nullable: true}
+        sequence:
+          nullable: true
+          oneOf:
+            - type: number
+            - type: string
+        group: {type: string, nullable: true}
+        default: {type: boolean, nullable: true}
+        is_triage: {type: boolean, nullable: true}
+        external_source: {type: string, nullable: true}
+        external_id: {type: string, nullable: true}
+        created_by: {type: string, nullable: true}
+        updated_by: {type: string, nullable: true}
+        project: {type: string, nullable: true}
+        workspace: {type: string, nullable: true}
+    StatePage:
+      type: object
+      description: Cursor page of Work Item States with grouping metadata.
+      additionalProperties: true
+      required: [results]
+      properties:
+        next_cursor: {type: string, nullable: true}
+        prev_cursor: {type: string, nullable: true}
+        next_page_results: {type: boolean, nullable: true}
+        prev_page_results: {type: boolean, nullable: true}
+        count: {type: integer, nullable: true}
+        total_pages: {type: integer, nullable: true}
+        total_results: {type: integer, nullable: true}
+        extra_stats: {nullable: true}
+        grouped_by: {type: string, nullable: true}
+        sub_grouped_by: {type: string, nullable: true}
+        total_count: {type: integer, nullable: true}
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/State'
+    StateCreate:
+      type: object
+      description: Create a Work Item State. Only name and color are required.
+      additionalProperties: false
+      required: [name, color]
+      properties:
+        name: {type: string}
+        description: {type: string, nullable: true}
+        color: {type: string}
+        sequence:
+          nullable: true
+          oneOf:
+            - type: number
+            - type: string
+        group: {type: string, nullable: true}
+        is_triage: {type: boolean, nullable: true}
+        default: {type: boolean, nullable: true}
+        external_source: {type: string, nullable: true}
+        external_id: {type: string, nullable: true}
+    StateUpdate:
+      type: object
+      description: Partial Work Item State update; every property is optional.
+      additionalProperties: false
+      properties:
+        name: {type: string, nullable: true}
+        description: {type: string, nullable: true}
+        color: {type: string, nullable: true}
+        sequence:
+          nullable: true
+          oneOf:
+            - type: number
+            - type: string
+        group: {type: string, nullable: true}
+        is_triage: {type: boolean, nullable: true}
+        default: {type: boolean, nullable: true}
+        external_source: {type: string, nullable: true}
+        external_id: {type: string, nullable: true}
     WorkItem:
       type: object
       description: Lossless Work Item response; expanded and future fields are permitted.

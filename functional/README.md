@@ -4,7 +4,7 @@ The functional suite runs the built `planeshift` executable as a subprocess.
 It exercises the real Cobra command tree, Viper/environment configuration,
 Plane client, authentication, response decoding, output, and cleanup path.
 It is intentionally opt-in because it creates, updates, archives, and deletes
-resources.
+projects, states, and work items.
 
 ## Run
 
@@ -22,8 +22,8 @@ mise function-test
 `PLANE_API_URL` is required even though the CLI has a Plane Cloud default. A
 mutating functional run never silently selects that default. Prism is useful
 for validating the request contract; a stateful disposable non-production
-Plane workspace is required for the complete create/read/update/delete
-lifecycle unless the proxy forwards to one.
+Plane workspace or forwarding proxy is required for the complete state
+create/read/update/delete lifecycle.
 
 ## Settings
 
@@ -65,12 +65,12 @@ substitutes a current `/work-items/` call.
 so it cannot read or modify the operator's normal Planeshift config. Only safe
 process settings and the explicitly selected Plane settings are inherited.
 
-Every generated project and work-item ID is tracked immediately. Cleanup
-handlers use only those IDs, delete child work items before their project,
-unarchive an archived project before deleting it, and log already-deleted or
-failed cleanup resources visibly. Names and identifiers include timestamp and
-process entropy to avoid existing resources. The suite never accepts an
-arbitrary existing resource ID as a destructive target.
+Every generated project, state, and work-item ID is tracked immediately.
+Cleanup handlers use only those IDs, delete child states and work items before
+their project, unarchive an archived project before deleting it, and log
+already-deleted or failed cleanup resources visibly. Names and identifiers
+include timestamp and process entropy to avoid existing resources. The suite
+never accepts an arbitrary existing resource ID as a destructive target.
 
 Object commands must return valid JSON. Archive, unarchive, and delete must
 succeed with quiet output, matching the documented 204 behavior. Version and

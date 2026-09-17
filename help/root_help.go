@@ -24,6 +24,8 @@ func (r *RootCmd) Long() string {
 
 	longText += `
   The Project command is also available as planeshift projects.
+
+  The Work Item State command is also available as planeshift states.
 `
 
 	return longText

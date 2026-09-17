@@ -52,6 +52,14 @@ var commandCoverage = []commandSpec{
 	{path: []string{"work-item", "legacy", "get"}, usage: "get workspace_slug project_id work_item_id"},
 	{path: []string{"work-item", "legacy", "update"}, usage: "update workspace_slug project_id work_item_id"},
 	{path: []string{"work-item", "legacy", "delete"}, usage: "delete workspace_slug project_id work_item_id"},
+	{path: []string{"state"}, usage: "state"},
+	{path: []string{"states"}, usage: "state"},
+	{path: []string{"state", "list"}, usage: "list workspace_slug project_id"},
+	{path: []string{"states", "list"}, usage: "list workspace_slug project_id"},
+	{path: []string{"state", "create"}, usage: "create workspace_slug project_id", requiredFlags: []string{"--name", "--color"}},
+	{path: []string{"state", "get"}, usage: "get workspace_slug project_id state_id"},
+	{path: []string{"state", "update"}, usage: "update workspace_slug project_id state_id"},
+	{path: []string{"state", "delete"}, usage: "delete workspace_slug project_id state_id"},
 }
 
 func TestCommandCoverageMatrix(t *testing.T) {
@@ -97,7 +105,7 @@ func TestVersionAndRootHelpAreSafe(t *testing.T) {
 	assertNoCredentialMaterial(t, version.Output())
 
 	for _, path := range [][]string{
-		{}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"},
+		{}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"},
 	} {
 		args := append(append([]string(nil), path...), "--help")
 		result := runner.Run(t, args...)
@@ -136,6 +144,30 @@ func registerProjectCleanup(t *testing.T, runner *Runner, workspace, id string) 
 		}
 	})
 	return project
+}
+
+type managedState struct {
+	runner    *Runner
+	workspace string
+	projectID string
+	id        string
+	deleted   bool
+}
+
+func registerStateCleanup(t *testing.T, runner *Runner, workspace, projectID, id string) *managedState {
+	t.Helper()
+	state := &managedState{runner: runner, workspace: workspace, projectID: projectID, id: id}
+	t.Cleanup(func() {
+		if state.deleted {
+			t.Logf("functional cleanup: state %s was already deleted by the lifecycle", state.id)
+			return
+		}
+		result := runner.Run(t, "state", "delete", workspace, projectID, id)
+		if result.Err != nil || result.ExitCode != 0 {
+			t.Logf("functional cleanup: generated state %s was already deleted or could not be deleted: %s", id, result.Output())
+		}
+	})
+	return state
 }
 
 func TestProjectLifecycle(t *testing.T) {
@@ -209,6 +241,56 @@ func TestProjectLifecycle(t *testing.T) {
 	templateProject.archived = false
 	runner.Run(t, "project", "delete", config.WorkspaceSlug, templateProject.id).RequireQuietSuccess(t)
 	templateProject.deleted = true
+}
+
+func TestStateLifecycle(t *testing.T) {
+	config, ok := lifecycleConfig(t)
+	if !ok {
+		return
+	}
+	runner, err := newRunner(t, config)
+	if err != nil {
+		t.Fatalf("configure functional runner: %v", err)
+	}
+
+	projectData, _ := runner.RunJSON(t, "project", "create", config.WorkspaceSlug,
+		"--name", uniqueName("states-project"), "--identifier", uniqueIdentifier())
+	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
+
+	stateName := uniqueName("state")
+	created, _ := runner.RunJSON(t, "state", "create", config.WorkspaceSlug, project.id,
+		"--name", stateName, "--color", "#123456", "--group", "started", "--default=false", "--is-triage=false")
+	managed := registerStateCleanup(t, runner, config.WorkspaceSlug, project.id, stateID(t, created))
+	if !jsonContainsString(created, stateName) {
+		t.Fatalf("created state response omitted generated name %q: %s", stateName, created)
+	}
+
+	list, _ := runner.RunJSON(t, "state", "list", config.WorkspaceSlug, project.id, "--per-page", "20")
+	if !jsonContainsString(list, managed.id) || !jsonContainsString(list, stateName) {
+		t.Fatalf("state list omitted generated state %s/%q: %s", managed.id, stateName, list)
+	}
+	aliasList, _ := runner.RunJSON(t, "states", "list", config.WorkspaceSlug, project.id)
+	if !jsonContainsString(aliasList, managed.id) || !jsonContainsString(aliasList, stateName) {
+		t.Fatalf("states list alias omitted generated state %s/%q: %s", managed.id, stateName, aliasList)
+	}
+
+	got, _ := runner.RunJSON(t, "state", "get", config.WorkspaceSlug, project.id, managed.id)
+	if !jsonContainsString(got, managed.id) || !jsonContainsString(got, stateName) {
+		t.Fatalf("state get did not return generated state %s/%q: %s", managed.id, stateName, got)
+	}
+
+	updatedName := uniqueName("state-updated")
+	updated, _ := runner.RunJSON(t, "state", "update", config.WorkspaceSlug, project.id, managed.id, "--name", updatedName)
+	if !jsonContainsString(updated, managed.id) || !jsonContainsString(updated, updatedName) {
+		t.Fatalf("state update did not return generated state %s with updated name %q: %s", managed.id, updatedName, updated)
+	}
+	persisted, _ := runner.RunJSON(t, "state", "get", config.WorkspaceSlug, project.id, managed.id)
+	if !jsonContainsString(persisted, managed.id) || !jsonContainsString(persisted, updatedName) {
+		t.Fatalf("state get did not persist updated name %q for %s: %s", updatedName, managed.id, persisted)
+	}
+
+	runner.Run(t, "state", "delete", config.WorkspaceSlug, project.id, managed.id).RequireQuietSuccess(t)
+	managed.deleted = true
 }
 
 type managedWorkItem struct {

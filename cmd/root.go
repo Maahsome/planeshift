@@ -96,7 +96,7 @@ var RootCmd = &cobra.Command{
 }
 
 func buildRootCmd() *cobra.Command {
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.splicectl/config.yml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/planeshift/config.yml)")
 	RootCmd.PersistentFlags().StringVarP(&c.OutputFormat, "output", "o", "", "output types: json, text, yaml, gron, raw")
 	RootCmd.PersistentFlags().BoolVar(&c.NoHeaders, "no-headers", false, "Suppress header output in Text output")
 	// RootCmd.PersistentFlags().BoolVar(&c., "no-headers", false, "Suppress header output in Text output")

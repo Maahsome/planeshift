@@ -367,6 +367,8 @@ func projectIdentifier(t *testing.T, data json.RawMessage) string {
 
 func workItemID(t *testing.T, data json.RawMessage) string { return jsonStringField(t, data, "id") }
 
+func stateID(t *testing.T, data json.RawMessage) string { return jsonStringField(t, data, "id") }
+
 func workItemSequence(t *testing.T, data json.RawMessage) string {
 	return jsonStringField(t, data, "sequence_id")
 }

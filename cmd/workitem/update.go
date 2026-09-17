@@ -3,7 +3,8 @@ package workitem
 import "github.com/spf13/cobra"
 
 func newUpdateCommand(legacy bool) *cobra.Command {
-	command := &cobra.Command{Use: "update workspace_slug project_id work_item_id", Args: cobra.ExactArgs(3), RunE: runUpdate}
+	command := &cobra.Command{Use: "update work_item_id", Args: cobra.ExactArgs(1), RunE: runUpdate}
+	addContextFlags(command)
 	addRequestFlags(command, true)
 	if legacy {
 		command.RunE = runLegacyUpdate
@@ -16,11 +17,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	item, _, err := client.Update(cmd.Context(), args[0], args[1], args[2], request)
+	item, _, err := client.Update(cmd.Context(), route.Workspace, route.ProjectID, args[0], request)
 	if err != nil {
 		return err
 	}
@@ -32,11 +37,15 @@ func runLegacyUpdate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	item, _, err := client.LegacyUpdate(cmd.Context(), args[0], args[1], args[2], request)
+	item, _, err := client.LegacyUpdate(cmd.Context(), route.Workspace, route.ProjectID, args[0], request)
 	if err != nil {
 		return err
 	}

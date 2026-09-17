@@ -9,8 +9,10 @@ func (s *StateCmd) Long() string {
 	return `Manage workflow states in a project.
 
 The canonical command is state; states is its plural alias. Every operation
-starts with a workspace slug and project ID. Get, update, and delete also take
-a state ID.
+uses --workspace and --project-id, defaulting to context.workspace and
+context.project.id. Explicit route flags override the saved context; blank
+overrides and missing required context values fail before a request. Get,
+update, and delete retain only the state ID as a positional argument.
 
 Operations:
   list, create, get, update, delete
@@ -27,8 +29,8 @@ Delete succeeds with 204 and prints no output. JSON, YAML, GRON, text, table,
 and raw output use the configured centralized output path.
 
 Examples:
-  planeshift state list my-workspace project-uuid --per-page 20
-  planeshift states create my-workspace project-uuid --name "Started" --color "#00ff00"
-  planeshift state update my-workspace project-uuid state-uuid --sequence 2
-  planeshift state delete my-workspace project-uuid state-uuid`
+  planeshift state list --per-page 20
+  planeshift states create --workspace my-workspace --project-id project-uuid --name "Started" --color "#00ff00"
+  planeshift state update --project-id project-uuid state-uuid --sequence 2
+  planeshift state delete --workspace my-workspace --project-id project-uuid state-uuid`
 }

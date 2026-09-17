@@ -26,6 +26,10 @@ The context is stored as context.workspace, context.project.id, and
 context.project.name. context get prints only those values. context prompt
 prints the fixed shell-friendly form workspace | project-name.
 
+Project, state, and project-scoped work-item commands consume these saved route
+values when their --workspace and/or --project-id flags are omitted. Explicit
+resource-command overrides apply only to that command and are not persisted.
+
 Inherited output options include --output (json, text, yaml, gron, or raw) and
 --no-headers for text output-producing commands. context prompt always prints
 its fixed text projection regardless of --output.

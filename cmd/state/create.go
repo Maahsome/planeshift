@@ -8,10 +8,11 @@ import (
 
 func newCreateCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:  "create workspace_slug project_id",
-		Args: cobra.ExactArgs(2),
+		Use:  "create",
+		Args: cobra.NoArgs,
 		RunE: runCreate,
 	}
+	addContextFlags(command)
 	command.Flags().String("name", "", "State name")
 	command.Flags().String("color", "", "State color")
 	addStateFields(command)
@@ -62,11 +63,15 @@ func runCreate(command *cobra.Command, args []string) error {
 		Group: group, IsTriage: isTriage, Default: defaultState,
 		ExternalSource: externalSource, ExternalID: externalID,
 	}
+	route, err := routeContext(command)
+	if err != nil {
+		return err
+	}
 	client, err := stateClient()
 	if err != nil {
 		return err
 	}
-	state, _, err := client.Create(command.Context(), args[0], args[1], request)
+	state, _, err := client.Create(command.Context(), route.Workspace, route.ProjectID, request)
 	if err != nil {
 		return err
 	}

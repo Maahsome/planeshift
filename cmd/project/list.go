@@ -10,10 +10,11 @@ import (
 
 func newListCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:  "list workspace_slug",
-		Args: cobra.ExactArgs(1),
+		Use:  "list",
+		Args: cobra.NoArgs,
 		RunE: runList,
 	}
+	addContextFlags(command, false)
 	addListFlags(command)
 	return command
 }
@@ -48,11 +49,15 @@ func runList(cmd *cobra.Command, args []string) error {
 	if _, err := options.Query(); err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, false)
+	if err != nil {
+		return err
+	}
 	client, err := projectClient()
 	if err != nil {
 		return err
 	}
-	page, _, err := client.List(cmd.Context(), args[0], options)
+	page, _, err := client.List(cmd.Context(), route.Workspace, options)
 	if err != nil {
 		return err
 	}

@@ -16,6 +16,7 @@ import (
 type commandSpec struct {
 	path          []string
 	usage         string
+	flags         []string
 	requiredFlags []string
 }
 
@@ -27,43 +28,43 @@ var commandCoverage = []commandSpec{
 	{path: []string{"context", "prompt"}, usage: "prompt"},
 	{path: []string{"project"}, usage: "project"},
 	{path: []string{"projects"}, usage: "project"},
-	{path: []string{"project", "list"}, usage: "list workspace_slug"},
-	{path: []string{"projects", "list"}, usage: "list workspace_slug"},
-	{path: []string{"project", "create"}, usage: "create workspace_slug", requiredFlags: []string{"--name", "--identifier"}},
-	{path: []string{"project", "create-template"}, usage: "create-template workspace_slug", requiredFlags: []string{"--template-id"}},
-	{path: []string{"project", "get"}, usage: "get workspace_slug project_id"},
-	{path: []string{"project", "update"}, usage: "update workspace_slug project_id"},
-	{path: []string{"project", "archive"}, usage: "archive workspace_slug project_id"},
-	{path: []string{"project", "unarchive"}, usage: "unarchive workspace_slug project_id"},
-	{path: []string{"project", "delete"}, usage: "delete workspace_slug project_id"},
+	{path: []string{"project", "list"}, usage: "list", flags: []string{"--workspace"}},
+	{path: []string{"projects", "list"}, usage: "list", flags: []string{"--workspace"}},
+	{path: []string{"project", "create"}, usage: "create", flags: []string{"--workspace"}, requiredFlags: []string{"--name", "--identifier"}},
+	{path: []string{"project", "create-template"}, usage: "create-template", flags: []string{"--workspace"}, requiredFlags: []string{"--template-id"}},
+	{path: []string{"project", "get"}, usage: "get", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"project", "update"}, usage: "update", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"project", "archive"}, usage: "archive", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"project", "unarchive"}, usage: "unarchive", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"project", "delete"}, usage: "delete", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"work-item"}, usage: "work-item"},
 	{path: []string{"work-items"}, usage: "work-item"},
-	{path: []string{"work-item", "search"}, usage: "search workspace_slug", requiredFlags: []string{"--search"}},
-	{path: []string{"work-item", "get-by-identifier"}, usage: "get-by-identifier workspace_slug project_identifier issue_identifier"},
-	{path: []string{"work-item", "list"}, usage: "list workspace_slug project_id"},
-	{path: []string{"work-items", "list"}, usage: "list workspace_slug project_id"},
-	{path: []string{"work-item", "create"}, usage: "create workspace_slug project_id", requiredFlags: []string{"--name"}},
-	{path: []string{"work-item", "get"}, usage: "get workspace_slug project_id work_item_id"},
-	{path: []string{"work-item", "update"}, usage: "update workspace_slug project_id work_item_id"},
-	{path: []string{"work-item", "delete"}, usage: "delete workspace_slug project_id work_item_id"},
-	{path: []string{"work-item", "relations-list"}, usage: "relations-list workspace_slug project_id work_item_id"},
-	{path: []string{"work-item", "relations-create"}, usage: "relations-create workspace_slug project_id work_item_id", requiredFlags: []string{"--relation-type", "--issue"}},
+	{path: []string{"work-item", "search"}, usage: "search", flags: []string{"--workspace", "--project-id"}, requiredFlags: []string{"--search"}},
+	{path: []string{"work-item", "get-by-identifier"}, usage: "get-by-identifier project_identifier issue_identifier", flags: []string{"--workspace"}},
+	{path: []string{"work-item", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-items", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "create"}, usage: "create", flags: []string{"--workspace", "--project-id"}, requiredFlags: []string{"--name"}},
+	{path: []string{"work-item", "get"}, usage: "get work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "update"}, usage: "update work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "delete"}, usage: "delete work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "relations-list"}, usage: "relations-list work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "relations-create"}, usage: "relations-create work_item_id", flags: []string{"--workspace", "--project-id"}, requiredFlags: []string{"--relation-type", "--issue"}},
 	{path: []string{"work-item", "legacy"}, usage: "legacy"},
-	{path: []string{"work-item", "legacy", "search"}, usage: "search workspace_slug", requiredFlags: []string{"--search"}},
-	{path: []string{"work-item", "legacy", "get-by-identifier"}, usage: "get-by-identifier workspace_slug project_identifier issue_identifier"},
-	{path: []string{"work-item", "legacy", "list"}, usage: "list workspace_slug project_id"},
-	{path: []string{"work-item", "legacy", "create"}, usage: "create workspace_slug project_id", requiredFlags: []string{"--name"}},
-	{path: []string{"work-item", "legacy", "get"}, usage: "get workspace_slug project_id work_item_id"},
-	{path: []string{"work-item", "legacy", "update"}, usage: "update workspace_slug project_id work_item_id"},
-	{path: []string{"work-item", "legacy", "delete"}, usage: "delete workspace_slug project_id work_item_id"},
+	{path: []string{"work-item", "legacy", "search"}, usage: "search", flags: []string{"--workspace", "--project-id"}, requiredFlags: []string{"--search"}},
+	{path: []string{"work-item", "legacy", "get-by-identifier"}, usage: "get-by-identifier project_identifier issue_identifier", flags: []string{"--workspace"}},
+	{path: []string{"work-item", "legacy", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "legacy", "create"}, usage: "create", flags: []string{"--workspace", "--project-id"}, requiredFlags: []string{"--name"}},
+	{path: []string{"work-item", "legacy", "get"}, usage: "get work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "legacy", "update"}, usage: "update work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"work-item", "legacy", "delete"}, usage: "delete work_item_id", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"state"}, usage: "state"},
 	{path: []string{"states"}, usage: "state"},
-	{path: []string{"state", "list"}, usage: "list workspace_slug project_id"},
-	{path: []string{"states", "list"}, usage: "list workspace_slug project_id"},
-	{path: []string{"state", "create"}, usage: "create workspace_slug project_id", requiredFlags: []string{"--name", "--color"}},
-	{path: []string{"state", "get"}, usage: "get workspace_slug project_id state_id"},
-	{path: []string{"state", "update"}, usage: "update workspace_slug project_id state_id"},
-	{path: []string{"state", "delete"}, usage: "delete workspace_slug project_id state_id"},
+	{path: []string{"state", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"states", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"state", "create"}, usage: "create", flags: []string{"--workspace", "--project-id"}, requiredFlags: []string{"--name", "--color"}},
+	{path: []string{"state", "get"}, usage: "get state_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"state", "update"}, usage: "update state_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"state", "delete"}, usage: "delete state_id", flags: []string{"--workspace", "--project-id"}},
 }
 
 func TestCommandCoverageMatrix(t *testing.T) {
@@ -85,6 +86,11 @@ func TestCommandCoverageMatrix(t *testing.T) {
 			for _, flag := range spec.requiredFlags {
 				if !strings.Contains(help, flag) {
 					t.Fatalf("help for %s omitted required flag %q:\n%s", strings.Join(spec.path, " "), flag, help)
+				}
+			}
+			for _, flag := range spec.flags {
+				if !strings.Contains(help, flag) {
+					t.Fatalf("help for %s omitted context flag %q:\n%s", strings.Join(spec.path, " "), flag, help)
 				}
 			}
 			assertNoCredentialMaterial(t, help)
@@ -135,14 +141,14 @@ func registerProjectCleanup(t *testing.T, runner *Runner, workspace, id string) 
 			return
 		}
 		if project.archived {
-			result := runner.Run(t, "project", "unarchive", workspace, id)
+			result := runner.Run(t, "project", "unarchive", "--workspace", workspace, "--project-id", id)
 			if result.Err != nil || result.ExitCode != 0 {
 				t.Logf("functional cleanup: could not unarchive generated project %s: %s", id, result.Output())
 			} else {
 				project.archived = false
 			}
 		}
-		result := runner.Run(t, "project", "delete", workspace, id)
+		result := runner.Run(t, "project", "delete", "--workspace", workspace, "--project-id", id)
 		if result.Err != nil || result.ExitCode != 0 {
 			t.Logf("functional cleanup: generated project %s was already deleted or could not be deleted: %s", id, result.Output())
 		}
@@ -166,7 +172,7 @@ func registerStateCleanup(t *testing.T, runner *Runner, workspace, projectID, id
 			t.Logf("functional cleanup: state %s was already deleted by the lifecycle", state.id)
 			return
 		}
-		result := runner.Run(t, "state", "delete", workspace, projectID, id)
+		result := runner.Run(t, "state", "delete", "--workspace", workspace, "--project-id", projectID, id)
 		if result.Err != nil || result.ExitCode != 0 {
 			t.Logf("functional cleanup: generated state %s was already deleted or could not be deleted: %s", id, result.Output())
 		}
@@ -184,18 +190,18 @@ func TestProjectLifecycle(t *testing.T) {
 		t.Fatalf("configure functional runner: %v", err)
 	}
 
-	list, _ := runner.RunJSON(t, "project", "list", config.WorkspaceSlug)
+	list, _ := runner.RunJSON(t, "project", "list", "--workspace", config.WorkspaceSlug)
 	if len(list) == 0 {
 		t.Fatal("project list returned no JSON document")
 	}
-	aliasList, _ := runner.RunJSON(t, "projects", "list", config.WorkspaceSlug)
+	aliasList, _ := runner.RunJSON(t, "projects", "list", "--workspace", config.WorkspaceSlug)
 	if len(aliasList) == 0 {
 		t.Fatal("projects list alias returned no JSON document")
 	}
 
 	name := uniqueName("project")
 	identifier := uniqueIdentifier()
-	created, _ := runner.RunJSON(t, "project", "create", config.WorkspaceSlug,
+	created, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
 		"--name", name, "--identifier", identifier)
 	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, created))
 	if got := projectIdentifier(t, created); got != identifier {
@@ -205,26 +211,26 @@ func TestProjectLifecycle(t *testing.T) {
 		t.Fatalf("created project response omitted generated name %q: %s", name, created)
 	}
 
-	got, _ := runner.RunJSON(t, "project", "get", config.WorkspaceSlug, project.id)
+	got, _ := runner.RunJSON(t, "project", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id)
 	if !jsonContainsString(got, project.id) || !jsonContainsString(got, name) {
 		t.Fatalf("project get did not return generated project %s: %s", project.id, got)
 	}
 
 	updatedName := uniqueName("project-updated")
-	updated, _ := runner.RunJSON(t, "project", "update", config.WorkspaceSlug, project.id, "--name", updatedName)
+	updated, _ := runner.RunJSON(t, "project", "update", "--workspace", config.WorkspaceSlug, "--project-id", project.id, "--name", updatedName)
 	if !jsonContainsString(updated, updatedName) {
 		t.Fatalf("project update omitted updated name %q: %s", updatedName, updated)
 	}
-	listed, _ := runner.RunJSON(t, "project", "list", config.WorkspaceSlug)
+	listed, _ := runner.RunJSON(t, "project", "list", "--workspace", config.WorkspaceSlug)
 	if !jsonContainsString(listed, project.id) && !jsonContainsString(listed, updatedName) {
 		t.Fatalf("project list omitted generated project %s/%q: %s", project.id, updatedName, listed)
 	}
 
-	runner.Run(t, "project", "archive", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "archive", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.archived = true
-	runner.Run(t, "project", "unarchive", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "unarchive", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.archived = false
-	runner.Run(t, "project", "delete", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.deleted = true
 
 	if config.TemplateID == "" {
@@ -233,17 +239,17 @@ func TestProjectLifecycle(t *testing.T) {
 	}
 	templateName := uniqueName("template-project")
 	templateIdentifier := uniqueIdentifier()
-	template, _ := runner.RunJSON(t, "project", "create-template", config.WorkspaceSlug,
+	template, _ := runner.RunJSON(t, "project", "create-template", "--workspace", config.WorkspaceSlug,
 		"--template-id", config.TemplateID, "--name", templateName, "--identifier", templateIdentifier)
 	templateProject := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, template))
 	if got := projectIdentifier(t, template); got != templateIdentifier {
 		t.Fatalf("template project identifier = %q, want %q", got, templateIdentifier)
 	}
-	runner.Run(t, "project", "archive", config.WorkspaceSlug, templateProject.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "archive", "--workspace", config.WorkspaceSlug, "--project-id", templateProject.id).RequireQuietSuccess(t)
 	templateProject.archived = true
-	runner.Run(t, "project", "unarchive", config.WorkspaceSlug, templateProject.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "unarchive", "--workspace", config.WorkspaceSlug, "--project-id", templateProject.id).RequireQuietSuccess(t)
 	templateProject.archived = false
-	runner.Run(t, "project", "delete", config.WorkspaceSlug, templateProject.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", templateProject.id).RequireQuietSuccess(t)
 	templateProject.deleted = true
 }
 
@@ -257,43 +263,43 @@ func TestStateLifecycle(t *testing.T) {
 		t.Fatalf("configure functional runner: %v", err)
 	}
 
-	projectData, _ := runner.RunJSON(t, "project", "create", config.WorkspaceSlug,
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
 		"--name", uniqueName("states-project"), "--identifier", uniqueIdentifier())
 	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
 
 	stateName := uniqueName("state")
-	created, _ := runner.RunJSON(t, "state", "create", config.WorkspaceSlug, project.id,
+	created, _ := runner.RunJSON(t, "state", "create", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
 		"--name", stateName, "--color", "#123456", "--group", "started", "--default=false", "--is-triage=false")
 	managed := registerStateCleanup(t, runner, config.WorkspaceSlug, project.id, stateID(t, created))
 	if !jsonContainsString(created, stateName) {
 		t.Fatalf("created state response omitted generated name %q: %s", stateName, created)
 	}
 
-	list, _ := runner.RunJSON(t, "state", "list", config.WorkspaceSlug, project.id, "--per-page", "20")
+	list, _ := runner.RunJSON(t, "state", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id, "--per-page", "20")
 	if !jsonContainsString(list, managed.id) || !jsonContainsString(list, stateName) {
 		t.Fatalf("state list omitted generated state %s/%q: %s", managed.id, stateName, list)
 	}
-	aliasList, _ := runner.RunJSON(t, "states", "list", config.WorkspaceSlug, project.id)
+	aliasList, _ := runner.RunJSON(t, "states", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id)
 	if !jsonContainsString(aliasList, managed.id) || !jsonContainsString(aliasList, stateName) {
 		t.Fatalf("states list alias omitted generated state %s/%q: %s", managed.id, stateName, aliasList)
 	}
 
-	got, _ := runner.RunJSON(t, "state", "get", config.WorkspaceSlug, project.id, managed.id)
+	got, _ := runner.RunJSON(t, "state", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id)
 	if !jsonContainsString(got, managed.id) || !jsonContainsString(got, stateName) {
 		t.Fatalf("state get did not return generated state %s/%q: %s", managed.id, stateName, got)
 	}
 
 	updatedName := uniqueName("state-updated")
-	updated, _ := runner.RunJSON(t, "state", "update", config.WorkspaceSlug, project.id, managed.id, "--name", updatedName)
+	updated, _ := runner.RunJSON(t, "state", "update", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id, "--name", updatedName)
 	if !jsonContainsString(updated, managed.id) || !jsonContainsString(updated, updatedName) {
 		t.Fatalf("state update did not return generated state %s with updated name %q: %s", managed.id, updatedName, updated)
 	}
-	persisted, _ := runner.RunJSON(t, "state", "get", config.WorkspaceSlug, project.id, managed.id)
+	persisted, _ := runner.RunJSON(t, "state", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id)
 	if !jsonContainsString(persisted, managed.id) || !jsonContainsString(persisted, updatedName) {
 		t.Fatalf("state get did not persist updated name %q for %s: %s", updatedName, managed.id, persisted)
 	}
 
-	runner.Run(t, "state", "delete", config.WorkspaceSlug, project.id, managed.id).RequireQuietSuccess(t)
+	runner.Run(t, "state", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id).RequireQuietSuccess(t)
 	managed.deleted = true
 }
 
@@ -313,7 +319,7 @@ func registerWorkItemCleanup(t *testing.T, runner *Runner, workspace, projectID,
 			t.Logf("functional cleanup: work item %s was already deleted by the lifecycle", item.id)
 			return
 		}
-		result := runner.Run(t, "work-item", "delete", workspace, projectID, id)
+		result := runner.Run(t, "work-item", "delete", "--workspace", workspace, "--project-id", projectID, id)
 		if result.Err != nil || result.ExitCode != 0 {
 			t.Logf("functional cleanup: generated work item %s was already deleted or could not be deleted: %s", id, result.Output())
 		}
@@ -333,68 +339,68 @@ func TestPrimaryWorkItemLifecycle(t *testing.T) {
 
 	projectName := uniqueName("work-items-project")
 	projectIdentifier := uniqueIdentifier()
-	projectData, _ := runner.RunJSON(t, "project", "create", config.WorkspaceSlug,
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
 		"--name", projectName, "--identifier", projectIdentifier)
 	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
 	projectIdentifier = projectIdentifierValue(t, projectData)
 
 	firstName := uniqueName("work-item-one")
-	firstData, _ := runner.RunJSON(t, "work-item", "create", config.WorkspaceSlug, project.id, "--name", firstName)
+	firstData, _ := runner.RunJSON(t, "work-item", "create", "--workspace", config.WorkspaceSlug, "--project-id", project.id, "--name", firstName)
 	first := registerWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, firstData))
 	firstSequence := workItemSequence(t, firstData)
 	secondName := uniqueName("work-item-two")
-	secondData, _ := runner.RunJSON(t, "work-item", "create", config.WorkspaceSlug, project.id, "--name", secondName)
+	secondData, _ := runner.RunJSON(t, "work-item", "create", "--workspace", config.WorkspaceSlug, "--project-id", project.id, "--name", secondName)
 	second := registerWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, secondData))
 	secondSequence := workItemSequence(t, secondData)
 	t.Logf("coverage status: generated project identifier=%s; work-item sequences=%s,%s", projectIdentifier, firstSequence, secondSequence)
 
-	list, _ := runner.RunJSON(t, "work-item", "list", config.WorkspaceSlug, project.id)
+	list, _ := runner.RunJSON(t, "work-item", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id)
 	if !jsonContainsString(list, first.id) || !jsonContainsString(list, second.id) {
 		t.Fatalf("work-item list omitted generated items %s/%s: %s", first.id, second.id, list)
 	}
-	aliasList, _ := runner.RunJSON(t, "work-items", "list", config.WorkspaceSlug, project.id)
+	aliasList, _ := runner.RunJSON(t, "work-items", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id)
 	if !jsonContainsString(aliasList, first.id) || !jsonContainsString(aliasList, second.id) {
 		t.Fatalf("work-items list alias omitted generated items %s/%s: %s", first.id, second.id, aliasList)
 	}
 
-	got, _ := runner.RunJSON(t, "work-item", "get", config.WorkspaceSlug, project.id, first.id)
+	got, _ := runner.RunJSON(t, "work-item", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id, first.id)
 	if !jsonContainsString(got, first.id) || !jsonContainsString(got, firstName) {
 		t.Fatalf("work-item get omitted generated item %s: %s", first.id, got)
 	}
-	identified, _ := runner.RunJSON(t, "work-item", "get-by-identifier", config.WorkspaceSlug, projectIdentifier, firstSequence)
+	identified, _ := runner.RunJSON(t, "work-item", "get-by-identifier", "--workspace", config.WorkspaceSlug, projectIdentifier, firstSequence)
 	if !jsonContainsString(identified, first.id) {
 		t.Fatalf("identifier lookup omitted generated item %s: %s", first.id, identified)
 	}
-	searched, _ := runner.RunJSON(t, "work-item", "search", config.WorkspaceSlug, "--search", firstName, "--project-id", project.id)
+	searched, _ := runner.RunJSON(t, "work-item", "search", "--workspace", config.WorkspaceSlug, "--search", firstName, "--project-id", project.id)
 	if !jsonContainsString(searched, first.id) && !jsonContainsString(searched, firstName) {
 		t.Fatalf("work-item search omitted generated item %s/%q: %s", first.id, firstName, searched)
 	}
 
 	updatedName := firstName + "-updated"
-	updated, _ := runner.RunJSON(t, "work-item", "update", config.WorkspaceSlug, project.id, first.id, "--name", updatedName)
+	updated, _ := runner.RunJSON(t, "work-item", "update", "--workspace", config.WorkspaceSlug, "--project-id", project.id, first.id, "--name", updatedName)
 	if !jsonContainsString(updated, updatedName) {
 		t.Fatalf("work-item update omitted updated name %q: %s", updatedName, updated)
 	}
 
-	relation, _ := runner.RunJSON(t, "work-item", "relations-create", config.WorkspaceSlug, project.id, first.id,
+	relation, _ := runner.RunJSON(t, "work-item", "relations-create", "--workspace", config.WorkspaceSlug, "--project-id", project.id, first.id,
 		"--relation-type", "relates_to", "--issue", second.id)
 	if len(relation) == 0 {
 		t.Fatal("relations-create returned empty JSON")
 	}
-	relations, _ := runner.RunJSON(t, "work-item", "relations-list", config.WorkspaceSlug, project.id, first.id)
+	relations, _ := runner.RunJSON(t, "work-item", "relations-list", "--workspace", config.WorkspaceSlug, "--project-id", project.id, first.id)
 	if len(relations) == 0 {
 		t.Fatal("relations-list returned empty JSON")
 	}
 
-	runner.Run(t, "work-item", "delete", config.WorkspaceSlug, project.id, second.id).RequireQuietSuccess(t)
+	runner.Run(t, "work-item", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id, second.id).RequireQuietSuccess(t)
 	second.deleted = true
-	runner.Run(t, "work-item", "delete", config.WorkspaceSlug, project.id, first.id).RequireQuietSuccess(t)
+	runner.Run(t, "work-item", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id, first.id).RequireQuietSuccess(t)
 	first.deleted = true
-	runner.Run(t, "project", "archive", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "archive", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.archived = true
-	runner.Run(t, "project", "unarchive", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "unarchive", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.archived = false
-	runner.Run(t, "project", "delete", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.deleted = true
 }
 
@@ -406,7 +412,7 @@ func registerLegacyWorkItemCleanup(t *testing.T, runner *Runner, workspace, proj
 			t.Logf("functional cleanup: legacy work item %s was already deleted by the lifecycle", item.id)
 			return
 		}
-		result := runner.Run(t, "work-item", "legacy", "delete", workspace, projectID, id)
+		result := runner.Run(t, "work-item", "legacy", "delete", "--workspace", workspace, "--project-id", projectID, id)
 		if result.Err != nil || result.ExitCode != 0 {
 			t.Logf("functional cleanup: legacy work item %s was already deleted or could not be deleted: %s", id, result.Output())
 		}
@@ -427,40 +433,40 @@ func TestLegacyWorkItemCompatibilityWhenOptedIn(t *testing.T) {
 		t.Fatalf("configure legacy functional runner: %v", err)
 	}
 
-	projectData, _ := runner.RunJSON(t, "project", "create", config.WorkspaceSlug,
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
 		"--name", uniqueName("legacy-project"), "--identifier", uniqueIdentifier())
 	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
 	projectIdentifier := projectIdentifierValue(t, projectData)
 	itemName := uniqueName("legacy-work-item")
-	created, supported := runLegacyJSON(t, runner, "work-item", "legacy", "create", config.WorkspaceSlug, project.id, "--name", itemName)
+	created, supported := runLegacyJSON(t, runner, "work-item", "legacy", "create", "--workspace", config.WorkspaceSlug, "--project-id", project.id, "--name", itemName)
 	if !supported {
 		return
 	}
 	item := registerLegacyWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, created))
 	sequence := workItemSequence(t, created)
 
-	list, supported := runLegacyJSON(t, runner, "work-item", "legacy", "list", config.WorkspaceSlug, project.id)
+	list, supported := runLegacyJSON(t, runner, "work-item", "legacy", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id)
 	if !supported {
 		return
 	}
 	if !jsonContainsString(list, item.id) {
 		t.Fatalf("legacy list omitted generated item %s: %s", item.id, list)
 	}
-	got, supported := runLegacyJSON(t, runner, "work-item", "legacy", "get", config.WorkspaceSlug, project.id, item.id)
+	got, supported := runLegacyJSON(t, runner, "work-item", "legacy", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id, item.id)
 	if !supported {
 		return
 	}
 	if !jsonContainsString(got, item.id) {
 		t.Fatalf("legacy get omitted generated item %s: %s", item.id, got)
 	}
-	identified, supported := runLegacyJSON(t, runner, "work-item", "legacy", "get-by-identifier", config.WorkspaceSlug, projectIdentifier, sequence)
+	identified, supported := runLegacyJSON(t, runner, "work-item", "legacy", "get-by-identifier", "--workspace", config.WorkspaceSlug, projectIdentifier, sequence)
 	if !supported {
 		return
 	}
 	if !jsonContainsString(identified, item.id) {
 		t.Fatalf("legacy identifier lookup omitted generated item %s: %s", item.id, identified)
 	}
-	searched, supported := runLegacyJSON(t, runner, "work-item", "legacy", "search", config.WorkspaceSlug,
+	searched, supported := runLegacyJSON(t, runner, "work-item", "legacy", "search", "--workspace", config.WorkspaceSlug,
 		"--search", itemName, "--project-id", project.id)
 	if !supported {
 		return
@@ -469,7 +475,7 @@ func TestLegacyWorkItemCompatibilityWhenOptedIn(t *testing.T) {
 		t.Fatalf("legacy search omitted generated item %s/%q: %s", item.id, itemName, searched)
 	}
 	updatedName := itemName + "-updated"
-	updated, supported := runLegacyJSON(t, runner, "work-item", "legacy", "update", config.WorkspaceSlug, project.id, item.id, "--name", updatedName)
+	updated, supported := runLegacyJSON(t, runner, "work-item", "legacy", "update", "--workspace", config.WorkspaceSlug, "--project-id", project.id, item.id, "--name", updatedName)
 	if !supported {
 		return
 	}
@@ -477,13 +483,13 @@ func TestLegacyWorkItemCompatibilityWhenOptedIn(t *testing.T) {
 		t.Fatalf("legacy update omitted updated name %q: %s", updatedName, updated)
 	}
 
-	runner.Run(t, "work-item", "legacy", "delete", config.WorkspaceSlug, project.id, item.id).RequireQuietSuccess(t)
+	runner.Run(t, "work-item", "legacy", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id, item.id).RequireQuietSuccess(t)
 	item.deleted = true
-	runner.Run(t, "project", "archive", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "archive", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.archived = true
-	runner.Run(t, "project", "unarchive", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "unarchive", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.archived = false
-	runner.Run(t, "project", "delete", config.WorkspaceSlug, project.id).RequireQuietSuccess(t)
+	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.deleted = true
 }
 

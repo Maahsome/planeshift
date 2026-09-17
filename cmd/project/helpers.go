@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"planeshift/config"
 	"planeshift/objects"
 	projectresource "planeshift/projects"
 
@@ -31,6 +32,31 @@ func outputProject(value any) error {
 	}
 	c.OutputData(output)
 	return nil
+}
+
+func addContextFlags(command *cobra.Command, project bool) {
+	command.Flags().String("workspace", "", "Workspace slug; defaults to context.workspace")
+	if project {
+		command.Flags().String("project-id", "", "Project ID; defaults to context.project.id")
+	}
+}
+
+func routeContext(command *cobra.Command, project bool) (config.RouteContext, error) {
+	if c == nil {
+		return config.RouteContext{}, fmt.Errorf("project command configuration is not initialized")
+	}
+	workspace, err := optionalStringFlag(command, "workspace")
+	if err != nil {
+		return config.RouteContext{}, err
+	}
+	var projectID *string
+	if project {
+		projectID, err = optionalStringFlag(command, "project-id")
+		if err != nil {
+			return config.RouteContext{}, err
+		}
+	}
+	return config.ResolveRouteContext(c.Context, workspace, projectID, project)
 }
 
 func optionalStringFlag(cmd *cobra.Command, name string) (*string, error) {

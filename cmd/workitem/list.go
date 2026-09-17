@@ -3,7 +3,8 @@ package workitem
 import "github.com/spf13/cobra"
 
 func newListCommand(legacy bool) *cobra.Command {
-	command := &cobra.Command{Use: "list workspace_slug project_id", Args: cobra.ExactArgs(2), RunE: runList}
+	command := &cobra.Command{Use: "list", Args: cobra.NoArgs, RunE: runList}
+	addContextFlags(command)
 	addListFlags(command)
 	if legacy {
 		command.RunE = runLegacyList
@@ -16,11 +17,15 @@ func runList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	page, _, err := client.List(cmd.Context(), args[0], args[1], options)
+	page, _, err := client.List(cmd.Context(), route.Workspace, route.ProjectID, options)
 	if err != nil {
 		return err
 	}
@@ -32,11 +37,15 @@ func runLegacyList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	route, err := routeContext(cmd, true)
+	if err != nil {
+		return err
+	}
 	client, err := workItemClient()
 	if err != nil {
 		return err
 	}
-	page, _, err := client.LegacyList(cmd.Context(), args[0], args[1], options)
+	page, _, err := client.LegacyList(cmd.Context(), route.Workspace, route.ProjectID, options)
 	if err != nil {
 		return err
 	}

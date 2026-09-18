@@ -1,6 +1,6 @@
 # Work 11: Implement Plane API — Work Item Links
 
-Use this file as the implementation prompt for the Work Item Links slice of `planeshift` (Jira ticket PSFT-11).
+Use this file as the implementation prompt for the Work Item Links slice of `planeshift` (Jira ticket PSFT-18).
 
 ## Prompt
 

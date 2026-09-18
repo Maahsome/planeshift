@@ -369,6 +369,8 @@ func workItemID(t *testing.T, data json.RawMessage) string { return jsonStringFi
 
 func stateID(t *testing.T, data json.RawMessage) string { return jsonStringField(t, data, "id") }
 
+func labelID(t *testing.T, data json.RawMessage) string { return jsonStringField(t, data, "id") }
+
 func workItemSequence(t *testing.T, data json.RawMessage) string {
 	return jsonStringField(t, data, "sequence_id")
 }

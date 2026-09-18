@@ -65,6 +65,14 @@ var commandCoverage = []commandSpec{
 	{path: []string{"state", "get"}, usage: "get state_id", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"state", "update"}, usage: "update state_id", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"state", "delete"}, usage: "delete state_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"label"}, usage: "label"},
+	{path: []string{"labels"}, usage: "label"},
+	{path: []string{"label", "list"}, usage: "list", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"labels", "list"}, usage: "list", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"label", "create"}, usage: "create", flags: []string{"--workspace", "--project-id", "--color", "--description", "--external-source", "--external-id", "--parent", "--sort-order"}, requiredFlags: []string{"--name"}},
+	{path: []string{"label", "get"}, usage: "get label_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"label", "update"}, usage: "update label_id", flags: []string{"--workspace", "--project-id", "--name", "--color", "--description", "--external-source", "--external-id", "--parent", "--sort-order"}},
+	{path: []string{"label", "delete"}, usage: "delete label_id", flags: []string{"--workspace", "--project-id"}},
 }
 
 func TestCommandCoverageMatrix(t *testing.T) {
@@ -115,7 +123,7 @@ func TestVersionAndRootHelpAreSafe(t *testing.T) {
 	assertNoCredentialMaterial(t, version.Output())
 
 	for _, path := range [][]string{
-		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"},
+		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"}, {"label"}, {"labels"},
 	} {
 		args := append(append([]string(nil), path...), "--help")
 		result := runner.Run(t, args...)
@@ -178,6 +186,81 @@ func registerStateCleanup(t *testing.T, runner *Runner, workspace, projectID, id
 		}
 	})
 	return state
+}
+
+type managedLabel struct {
+	runner    *Runner
+	workspace string
+	projectID string
+	id        string
+	deleted   bool
+}
+
+func registerLabelCleanup(t *testing.T, runner *Runner, workspace, projectID, id string) *managedLabel {
+	t.Helper()
+	label := &managedLabel{runner: runner, workspace: workspace, projectID: projectID, id: id}
+	t.Cleanup(func() {
+		if label.deleted {
+			t.Logf("functional cleanup: label %s was already deleted by the lifecycle", label.id)
+			return
+		}
+		result := runner.Run(t, "label", "delete", "--workspace", workspace, "--project-id", projectID, id)
+		if result.Err != nil || result.ExitCode != 0 {
+			t.Logf("functional cleanup: generated label %s was already deleted or could not be deleted: %s", id, result.Output())
+		}
+	})
+	return label
+}
+
+func TestLabelLifecycle(t *testing.T) {
+	config, ok := lifecycleConfig(t)
+	if !ok {
+		return
+	}
+	runner, err := newRunner(t, config)
+	if err != nil {
+		t.Fatalf("configure functional runner: %v", err)
+	}
+
+	projectName := uniqueName("labels-project")
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
+		"--name", projectName, "--identifier", uniqueIdentifier())
+	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
+
+	labelName := uniqueName("label")
+	created, _ := runner.RunJSON(t, "label", "create", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		"--name", labelName, "--color", "#123456")
+	managed := registerLabelCleanup(t, runner, config.WorkspaceSlug, project.id, labelID(t, created))
+	if !jsonContainsString(created, managed.id) || !jsonContainsString(created, labelName) {
+		t.Fatalf("created label omitted generated label %s/%q: %s", managed.id, labelName, created)
+	}
+
+	list, _ := runner.RunJSON(t, "label", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id, "--per-page", "20")
+	if !jsonContainsString(list, managed.id) || !jsonContainsString(list, labelName) {
+		t.Fatalf("label list omitted generated label %s/%q: %s", managed.id, labelName, list)
+	}
+	aliasList, _ := runner.RunJSON(t, "labels", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id)
+	if !jsonContainsString(aliasList, managed.id) || !jsonContainsString(aliasList, labelName) {
+		t.Fatalf("labels list alias omitted generated label %s/%q: %s", managed.id, labelName, aliasList)
+	}
+
+	got, _ := runner.RunJSON(t, "label", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id)
+	if !jsonContainsString(got, managed.id) || !jsonContainsString(got, labelName) {
+		t.Fatalf("label get did not return generated label %s/%q: %s", managed.id, labelName, got)
+	}
+
+	updatedName := uniqueName("label-updated")
+	updated, _ := runner.RunJSON(t, "label", "update", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id, "--name", updatedName)
+	if !jsonContainsString(updated, managed.id) || !jsonContainsString(updated, updatedName) {
+		t.Fatalf("label update did not return generated label %s with updated name %q: %s", managed.id, updatedName, updated)
+	}
+	persisted, _ := runner.RunJSON(t, "label", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id)
+	if !jsonContainsString(persisted, managed.id) || !jsonContainsString(persisted, updatedName) {
+		t.Fatalf("label get did not persist updated name %q for %s: %s", updatedName, managed.id, persisted)
+	}
+
+	runner.Run(t, "label", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id, managed.id).RequireQuietSuccess(t)
+	managed.deleted = true
 }
 
 func TestProjectLifecycle(t *testing.T) {

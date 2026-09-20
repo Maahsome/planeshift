@@ -31,13 +31,15 @@ func (r *RootCmd) Long() string {
 
   The Work Item Link command is also available as planeshift links.
 
+  The Work Item Activity command is also available as planeshift activities.
+
   Use planeshift context set or planeshift context get to manage the local
   workspace and project context. Use planeshift context prompt for a
   shell-friendly label such as:
 
     my-workspace | Demo Project
 
-  Project, state, label, link, and project-scoped work-item commands consume the saved
+  Project, state, label, link, activity, and project-scoped work-item commands consume the saved
   context when --workspace or --project-id is omitted. Use those flags for a
   one-command route override; overrides are not saved.
 `

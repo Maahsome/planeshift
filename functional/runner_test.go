@@ -373,6 +373,29 @@ func labelID(t *testing.T, data json.RawMessage) string { return jsonStringField
 
 func linkID(t *testing.T, data json.RawMessage) string { return jsonStringField(t, data, "id") }
 
+func activityID(t *testing.T, data json.RawMessage) string {
+	t.Helper()
+	object := jsonObject(data)
+	if object == nil {
+		t.Fatalf("expected activity page JSON object: %s", data)
+	}
+	results, ok := object["results"]
+	if !ok || string(results) == "null" {
+		t.Fatalf("activity page omitted non-null results: %s", data)
+	}
+	var entries []json.RawMessage
+	if err := json.Unmarshal(results, &entries); err != nil {
+		t.Fatalf("activity page results is not an array: %v: %s", err, results)
+	}
+	if len(entries) == 0 {
+		t.Fatalf("activity page results is empty: %s", data)
+	}
+	if jsonObject(entries[0]) == nil {
+		t.Fatalf("activity page first result is not an object: %s", entries[0])
+	}
+	return jsonStringField(t, entries[0], "id")
+}
+
 func workItemSequence(t *testing.T, data json.RawMessage) string {
 	return jsonStringField(t, data, "sequence_id")
 }

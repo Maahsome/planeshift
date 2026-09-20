@@ -4,7 +4,9 @@ The functional suite runs the built `planeshift` executable as a subprocess.
 It exercises the real Cobra command tree, Viper/environment configuration,
 Plane client, authentication, response decoding, output, and cleanup path.
 It is intentionally opt-in because it creates, updates, archives, and deletes
-projects, states, labels, work items, and work-item links.
+projects, states, labels, work items, and work-item links. Activity coverage is
+read-only, but it still needs a disposable generated project and work item so
+the target produces activity history to observe.
 
 ## Run
 
@@ -47,17 +49,17 @@ Optional settings:
 
 | Variable | Purpose |
 | --- | --- |
-| `PLANE_FUNCTIONAL_INCLUDE_LEGACY=true` | Runs the hidden `work-item legacy` and five hidden `link legacy` compatibility commands against `/issues/`. Default: skipped. |
+| `PLANE_FUNCTIONAL_INCLUDE_LEGACY=true` | Runs the hidden `work-item legacy`, five hidden `link legacy`, and hidden `activity legacy` compatibility reads against `/issues/`. Default: skipped. |
 | `PLANE_FUNCTIONAL_PROJECT_TEMPLATE_ID` | Runs `project create-template` and cleans up the generated project. Default: skipped. |
 | `PLANE_FUNCTIONAL_ALLOW_PRODUCTION=true` | Overrides the Plane Cloud host safety gate only after explicit team review. Prefer Prism or a non-production host. |
 
 The template command is a Business-license feature. It is always registered
 and help-tested, but it is not executed without the template ID. Deprecated
 `/issues/` routes are also never called without the legacy opt-in. When
-`PLANE_FUNCTIONAL_INCLUDE_LEGACY=true`, the opt-in covers both hidden work-item
-and link compatibility commands. If an opted-in target returns an explicit
-unsupported/404/405 response for those routes, the test records a visible skip
-naming the `/issues/` limitation; it never substitutes a current
+`PLANE_FUNCTIONAL_INCLUDE_LEGACY=true`, the opt-in covers hidden work-item,
+link, and activity compatibility commands. If an opted-in target returns an
+explicit unsupported/404/405 response for those routes, the test records a
+visible skip naming the `/issues/` limitation; it never substitutes a current
 `/work-items/` call.
 
 ## Isolation, cleanup, and output
@@ -74,7 +76,10 @@ their generated work items, delete child states, labels, and work items before
 their generated project, unarchive an archived project before deleting it, and
 log already-deleted or failed cleanup resources visibly. Names and identifiers
 include timestamp and process entropy to avoid existing resources. The suite
-never accepts an arbitrary existing resource ID as a destructive target.
+never accepts an arbitrary existing resource ID as a destructive target. Activity
+reads use the generated work item to obtain an activity ID; observed activity
+IDs are not deleted, and the existing generated work-item/project cleanup
+remains responsible for isolation.
 
 Object commands must return valid JSON. Archive, unarchive, and delete must
 succeed with quiet output, matching the documented 204 behavior. Version and

@@ -72,6 +72,15 @@ var commandCoverage = []commandSpec{
 	{path: []string{"link", "legacy", "get"}, usage: "get issue_id link_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand"}, forbiddenFlags: []string{"--order-by"}},
 	{path: []string{"link", "legacy", "update"}, usage: "update issue_id link_id", flags: []string{"--workspace", "--project-id", "--url", "--title"}},
 	{path: []string{"link", "legacy", "delete"}, usage: "delete issue_id link_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"activity"}, usage: "activity"},
+	{path: []string{"activities"}, usage: "activity"},
+	{path: []string{"activity", "list"}, usage: "list work_item_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"activities", "list"}, usage: "list work_item_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"activity", "get"}, usage: "get work_item_id activity_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"activities", "get"}, usage: "get work_item_id activity_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"activity", "legacy"}, usage: "legacy"},
+	{path: []string{"activity", "legacy", "list"}, usage: "list issue_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"activity", "legacy", "get"}, usage: "get issue_id activity_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
 	{path: []string{"state"}, usage: "state"},
 	{path: []string{"states"}, usage: "state"},
 	{path: []string{"state", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
@@ -143,7 +152,7 @@ func TestVersionAndRootHelpAreSafe(t *testing.T) {
 	assertNoCredentialMaterial(t, version.Output())
 
 	for _, path := range [][]string{
-		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"}, {"label"}, {"labels"}, {"link"}, {"links"}, {"link", "legacy"},
+		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"activity"}, {"activities"}, {"activity", "legacy"}, {"state"}, {"states"}, {"label"}, {"labels"}, {"link"}, {"links"}, {"link", "legacy"},
 	} {
 		args := append(append([]string(nil), path...), "--help")
 		result := runner.Run(t, args...)
@@ -546,6 +555,77 @@ func TestPrimaryWorkItemLifecycle(t *testing.T) {
 	project.archived = false
 	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.deleted = true
+}
+
+func TestActivityLifecycle(t *testing.T) {
+	config, ok := lifecycleConfig(t)
+	if !ok {
+		return
+	}
+	runner, err := newRunner(t, config)
+	if err != nil {
+		t.Fatalf("configure activity functional runner: %v", err)
+	}
+
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
+		"--name", uniqueName("activity-project"), "--identifier", uniqueIdentifier())
+	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
+	workItemData, _ := runner.RunJSON(t, "work-item", "create", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, "--name", uniqueName("activity-work-item"))
+	workItem := registerWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, workItemData))
+
+	list, _ := runner.RunJSON(t, "activity", "list", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, "--per-page", "20")
+	activity := activityID(t, list)
+
+	aliasList, _ := runner.RunJSON(t, "activities", "list", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, "--per-page", "20")
+	if aliasActivity := activityID(t, aliasList); aliasActivity != activity {
+		t.Fatalf("activities list returned activity %s, want canonical activity %s", aliasActivity, activity)
+	}
+
+	detail, _ := runner.RunJSON(t, "activity", "get", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, activity, "--per-page", "20")
+	if detailActivity := jsonStringField(t, detail, "id"); detailActivity != activity {
+		t.Fatalf("activity get returned activity %s, want %s", detailActivity, activity)
+	}
+}
+
+func TestLegacyActivityCompatibilityWhenOptedIn(t *testing.T) {
+	if !isTrue(os.Getenv(functionalOptIn)) || !isTrue(os.Getenv(functionalLegacy)) {
+		t.Skipf("coverage status: hidden legacy /issues/ activity lifecycle skipped; set %s=true and %s=true to enable", functionalOptIn, functionalLegacy)
+	}
+	config, err := loadFunctionalConfig()
+	if err != nil {
+		t.Fatalf("legacy activity functional prerequisites: %v", err)
+	}
+	runner, err := newRunner(t, config)
+	if err != nil {
+		t.Fatalf("configure legacy activity functional runner: %v", err)
+	}
+
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
+		"--name", uniqueName("legacy-activity-project"), "--identifier", uniqueIdentifier())
+	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
+	workItemData, _ := runner.RunJSON(t, "work-item", "create", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, "--name", uniqueName("legacy-activity-work-item"))
+	workItem := registerWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, workItemData))
+
+	list, supported := runLegacyJSON(t, runner, "activity", "legacy", "list", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, "--per-page", "20")
+	if !supported {
+		return
+	}
+	activity := activityID(t, list)
+
+	detail, supported := runLegacyJSON(t, runner, "activity", "legacy", "get", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, activity, "--per-page", "20")
+	if !supported {
+		return
+	}
+	if detailActivity := jsonStringField(t, detail, "id"); detailActivity != activity {
+		t.Fatalf("legacy activity get returned activity %s, want %s", detailActivity, activity)
+	}
 }
 
 func TestLinkLifecycle(t *testing.T) {

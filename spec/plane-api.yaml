@@ -50,6 +50,7 @@ tags:
   - name: Time Tracking
   - name: Users
   - name: Work Item Types
+  - name: Work Item Activity
   - name: Work Items
   - name: Workspace Invitations
 paths:
@@ -5585,8 +5586,8 @@ paths:
           type: string
     get:
       tags:
-        - 'Work Items'
-      summary: 'List issue activities'
+        - 'Work Item Activity'
+      summary: 'List work item activities'
       description: |
         Documented Plane operation.
         Source page(s):
@@ -5599,12 +5600,17 @@ paths:
         - $ref: '#/components/parameters/PerPage'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Expand'
+        - $ref: '#/components/parameters/OrderBy'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.activities:read
       responses:
         '200':
-          $ref: '#/components/responses/PaginatedJson'
+          $ref: '#/components/responses/ActivityPage'
         default:
           $ref: '#/components/responses/Error'
-  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/work-items/{work_item_id}/activities/{resource_id}/':
+  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/work-items/{work_item_id}/activities/{activity_id}/':
     parameters:
       - name: 'workspace_slug'
         in: path
@@ -5621,20 +5627,20 @@ paths:
         required: true
         schema:
           type: string
-      - name: 'resource_id'
+      - name: 'activity_id'
         in: path
         required: true
         schema:
           type: string
     get:
       tags:
-        - 'Work Items'
-      summary: 'Get issue activity detail'
+        - 'Work Item Activity'
+      summary: 'Get work item activity detail'
       description: |
         Documented Plane operation.
         Source page(s):
         - https://developers.plane.so/api-reference/issue-activity/get-issue-activity-detail.md
-      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_activities_resource_id
+      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_activities_activity_id
       x-plane-documentation:
         - https://developers.plane.so/api-reference/issue-activity/get-issue-activity-detail.md
       parameters:
@@ -5642,9 +5648,105 @@ paths:
         - $ref: '#/components/parameters/PerPage'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Expand'
+        - $ref: '#/components/parameters/OrderBy'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.activities:read
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          $ref: '#/components/responses/ActivityDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/activities/':
+    parameters:
+      - name: 'workspace_slug'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'project_id'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'issue_id'
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - 'Work Item Activity'
+      summary: 'Deprecated list work item activities'
+      description: |
+        Compatibility-only alias for the current Work Item Activity collection.
+        Source page(s):
+        - https://developers.plane.so/api-reference/issue-activity/list-issue-activities.md
+      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_activities
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/issue-activity/list-issue-activities.md
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Expand'
+        - $ref: '#/components/parameters/OrderBy'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.activities:read
+      responses:
+        '200':
+          $ref: '#/components/responses/ActivityPage'
+        default:
+          $ref: '#/components/responses/Error'
+  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/activities/{activity_id}/':
+    parameters:
+      - name: 'workspace_slug'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'project_id'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'issue_id'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'activity_id'
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - 'Work Item Activity'
+      summary: 'Deprecated get work item activity detail'
+      description: |
+        Compatibility-only alias for the current Work Item Activity detail.
+        Source page(s):
+        - https://developers.plane.so/api-reference/issue-activity/get-issue-activity-detail.md
+      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_activities_activity_id
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/issue-activity/get-issue-activity-detail.md
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Expand'
+        - $ref: '#/components/parameters/OrderBy'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.activities:read
+      responses:
+        '200':
+          $ref: '#/components/responses/ActivityDetail'
         default:
           $ref: '#/components/responses/Error'
   '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/work-items/{work_item_id}/attachments/':
@@ -8736,6 +8838,84 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/WorkItemRelation'
+    Activity:
+      type: object
+      description: Lossless Work Item Activity response; expanded and future members are permitted.
+      additionalProperties: true
+      properties:
+        id: {type: string, nullable: true}
+        created_at: {type: string, nullable: true}
+        updated_at: {type: string, nullable: true}
+        deleted_at: {type: string, nullable: true}
+        verb: {type: string, nullable: true}
+        field: {type: string, nullable: true}
+        old_value:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        new_value:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        comment: {type: string, nullable: true}
+        attachments:
+          type: array
+          nullable: true
+          items: {}
+        old_identifier:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        new_identifier:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        epoch: {type: number, format: double, nullable: true}
+        project:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        workspace:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        issue:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        issue_comment:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+        actor:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/JsonValue'
+    ActivityPage:
+      type: object
+      description: Cursor page of Work Item Activity records with grouping metadata.
+      additionalProperties: true
+      required: [results]
+      properties:
+        next_cursor: {type: string, nullable: true}
+        prev_cursor: {type: string, nullable: true}
+        next_page_results: {type: boolean, nullable: true}
+        prev_page_results: {type: boolean, nullable: true}
+        count: {type: integer, nullable: true}
+        total_pages: {type: integer, nullable: true}
+        total_results: {type: integer, nullable: true}
+        extra_stats: {nullable: true}
+        grouped_by: {type: string, nullable: true}
+        sub_grouped_by: {type: string, nullable: true}
+        total_count: {type: integer, nullable: true}
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Activity'
+    ActivityDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/ActivityPage'
+      description: Page-shaped response documented by the Work Item Activity detail operation.
     Link:
       type: object
       description: External Work Item Link response. Unknown and expanded members are retained.
@@ -8851,6 +9031,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/LinkDetailResponse'
+    ActivityPage:
+      description: Cursor-paginated Work Item Activity response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ActivityPage'
+    ActivityDetail:
+      description: Page-shaped Work Item Activity detail response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ActivityDetailResponse'
     PaginatedJson:
       description: Cursor-paginated JSON response.
       content:

@@ -21,6 +21,10 @@ const (
 	LinkCommandName = "link"
 	// LinkCommandAlias is the plural alias for the Work Item Link command.
 	LinkCommandAlias = "links"
+	// ActivityCommandName is the canonical Work Item Activity command name.
+	ActivityCommandName = "activity"
+	// ActivityCommandAlias is the plural alias for the Work Item Activity command.
+	ActivityCommandAlias = "activities"
 	// ContextCommandName is the canonical local context command name.
 	ContextCommandName = "context"
 )

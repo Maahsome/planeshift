@@ -17,6 +17,10 @@ const (
 	LabelCommandName = "label"
 	// LabelCommandAlias is the plural alias for the project label command.
 	LabelCommandAlias = "labels"
+	// LinkCommandName is the canonical singular Work Item Link command name.
+	LinkCommandName = "link"
+	// LinkCommandAlias is the plural alias for the Work Item Link command.
+	LinkCommandAlias = "links"
 	// ContextCommandName is the canonical local context command name.
 	ContextCommandName = "context"
 )

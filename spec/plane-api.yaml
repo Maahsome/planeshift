@@ -5968,9 +5968,14 @@ paths:
         - $ref: '#/components/parameters/PerPage'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Expand'
+        - $ref: '#/components/parameters/OrderBy'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:read
       responses:
         '200':
-          $ref: '#/components/responses/PaginatedJson'
+          $ref: '#/components/responses/LinkPage'
         default:
           $ref: '#/components/responses/Error'
     post:
@@ -5985,19 +5990,21 @@ paths:
       x-plane-documentation:
         - https://developers.plane.so/api-reference/link/add-link.md
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JsonValue'
+              $ref: '#/components/schemas/LinkCreate'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:write
       responses:
-        '200':
-          $ref: '#/components/responses/Json'
         '201':
-          $ref: '#/components/responses/Json'
+          $ref: '#/components/responses/LinkCreated'
         default:
           $ref: '#/components/responses/Error'
-  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/work-items/{work_item_id}/links/{resource_id}/':
+  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/work-items/{work_item_id}/links/{link_id}/':
     parameters:
       - name: 'workspace_slug'
         in: path
@@ -6014,7 +6021,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: 'resource_id'
+      - name: 'link_id'
         in: path
         required: true
         schema:
@@ -6027,7 +6034,7 @@ paths:
         Documented Plane operation.
         Source page(s):
         - https://developers.plane.so/api-reference/link/get-link-detail.md
-      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_links_resource_id
+      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_links_link_id
       x-plane-documentation:
         - https://developers.plane.so/api-reference/link/get-link-detail.md
       parameters:
@@ -6035,9 +6042,13 @@ paths:
         - $ref: '#/components/parameters/PerPage'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Expand'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:read
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          $ref: '#/components/responses/LinkDetail'
         default:
           $ref: '#/components/responses/Error'
     patch:
@@ -6048,18 +6059,22 @@ paths:
         Documented Plane operation.
         Source page(s):
         - https://developers.plane.so/api-reference/link/update-link-detail.md
-      operationId: patch_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_links_resource_id
+      operationId: patch_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_links_link_id
       x-plane-documentation:
         - https://developers.plane.so/api-reference/link/update-link-detail.md
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JsonValue'
+              $ref: '#/components/schemas/LinkUpdate'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:write
       responses:
         '200':
-          $ref: '#/components/responses/Json'
+          $ref: '#/components/responses/Link'
         default:
           $ref: '#/components/responses/Error'
     delete:
@@ -6070,9 +6085,175 @@ paths:
         Documented Plane operation.
         Source page(s):
         - https://developers.plane.so/api-reference/link/delete-link.md
-      operationId: delete_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_links_resource_id
+      operationId: delete_api_v1_workspaces_workspace_slug_projects_project_id_work_items_work_item_id_links_link_id
       x-plane-documentation:
         - https://developers.plane.so/api-reference/link/delete-link.md
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:write
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        default:
+          $ref: '#/components/responses/Error'
+  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/links/':
+    parameters:
+      - name: 'workspace_slug'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'project_id'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'issue_id'
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - 'Work Items'
+      summary: 'List links (compatibility)'
+      description: |
+        Explicitly inventoried compatibility operation for the deprecated /issues/ route family.
+        Source page(s):
+        - https://developers.plane.so/api-reference/link/list-links.md
+      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_links
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/link/list-links.md
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Expand'
+        - $ref: '#/components/parameters/OrderBy'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:read
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkPage'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+        - 'Work Items'
+      summary: 'Add link (compatibility)'
+      description: |
+        Explicitly inventoried compatibility operation for the deprecated /issues/ route family.
+        Source page(s):
+        - https://developers.plane.so/api-reference/link/add-link.md
+      operationId: post_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_links
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/link/add-link.md
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkCreate'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:write
+      responses:
+        '201':
+          $ref: '#/components/responses/LinkCreated'
+        default:
+          $ref: '#/components/responses/Error'
+  '/api/v1/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/links/{link_id}/':
+    parameters:
+      - name: 'workspace_slug'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'project_id'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'issue_id'
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: 'link_id'
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - 'Work Items'
+      summary: 'Get link detail (compatibility)'
+      description: |
+        Explicitly inventoried compatibility operation for the deprecated /issues/ route family.
+        Source page(s):
+        - https://developers.plane.so/api-reference/link/get-link-detail.md
+      operationId: get_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_links_link_id
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/link/get-link-detail.md
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Expand'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:read
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkDetail'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+        - 'Work Items'
+      summary: 'Update link detail (compatibility)'
+      description: |
+        Explicitly inventoried compatibility operation for the deprecated /issues/ route family.
+        Source page(s):
+        - https://developers.plane.so/api-reference/link/update-link-detail.md
+      operationId: patch_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_links_link_id
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/link/update-link-detail.md
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkUpdate'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:write
+      responses:
+        '200':
+          $ref: '#/components/responses/Link'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags:
+        - 'Work Items'
+      summary: 'Delete link (compatibility)'
+      description: |
+        Explicitly inventoried compatibility operation for the deprecated /issues/ route family.
+        Source page(s):
+        - https://developers.plane.so/api-reference/link/delete-link.md
+      operationId: delete_api_v1_workspaces_workspace_slug_projects_project_id_issues_issue_id_links_link_id
+      x-plane-documentation:
+        - https://developers.plane.so/api-reference/link/delete-link.md
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      x-plane-oauth-scope: projects.work_items.links:write
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
@@ -8555,6 +8736,71 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/WorkItemRelation'
+    Link:
+      type: object
+      description: External Work Item Link response. Unknown and expanded members are retained.
+      additionalProperties: true
+      properties:
+        id: {type: string, nullable: true}
+        title: {type: string, nullable: true}
+        url: {type: string, nullable: true}
+        metadata:
+          nullable: true
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: array
+              items: {}
+            - type: string
+            - type: number
+            - type: boolean
+        created_at: {type: string, nullable: true}
+        updated_at: {type: string, nullable: true}
+        created_by: {nullable: true}
+        updated_by: {nullable: true}
+        project: {nullable: true}
+        workspace: {nullable: true}
+        issue: {nullable: true}
+    LinkPage:
+      type: object
+      description: Cursor page of Work Item Links with grouping and dynamic metadata.
+      additionalProperties: true
+      required: [results]
+      properties:
+        next_cursor: {type: string, nullable: true}
+        prev_cursor: {type: string, nullable: true}
+        next_page_results: {type: boolean, nullable: true}
+        prev_page_results: {type: boolean, nullable: true}
+        count: {type: integer, nullable: true}
+        total_pages: {type: integer, nullable: true}
+        total_results: {type: integer, nullable: true}
+        extra_stats: {nullable: true}
+        grouped_by: {type: string, nullable: true}
+        sub_grouped_by: {type: string, nullable: true}
+        total_count: {type: integer, nullable: true}
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+    LinkDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/LinkPage'
+      description: Page-shaped response documented by the Work Item Link detail operation.
+    LinkCreate:
+      type: object
+      description: Create a Work Item Link. URL is required and title is optional.
+      additionalProperties: false
+      required: [url]
+      properties:
+        url: {type: string}
+        title: {type: string}
+    LinkUpdate:
+      type: object
+      description: Partial Work Item Link update; omitted properties remain unchanged.
+      additionalProperties: false
+      properties:
+        url: {type: string}
+        title: {type: string}
     ErrorObject:
       type: object
       additionalProperties: true
@@ -8581,6 +8827,30 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/WorkItem'
+    Link:
+      description: Work Item Link response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Link'
+    LinkCreated:
+      description: Created Work Item Link response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Link'
+    LinkPage:
+      description: Cursor-paginated Work Item Link response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LinkPage'
+    LinkDetail:
+      description: Page-shaped Work Item Link detail response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LinkDetailResponse'
     PaginatedJson:
       description: Cursor-paginated JSON response.
       content:

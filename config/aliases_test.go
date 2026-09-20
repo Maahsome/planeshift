@@ -38,6 +38,15 @@ func TestLabelCommandNames(t *testing.T) {
 	}
 }
 
+func TestLinkCommandNames(t *testing.T) {
+	if LinkCommandName != "link" {
+		t.Fatalf("LinkCommandName = %q, want link", LinkCommandName)
+	}
+	if LinkCommandAlias != "links" {
+		t.Fatalf("LinkCommandAlias = %q, want links", LinkCommandAlias)
+	}
+}
+
 func TestContextCommandName(t *testing.T) {
 	if ContextCommandName != "context" {
 		t.Fatalf("ContextCommandName = %q, want context", ContextCommandName)

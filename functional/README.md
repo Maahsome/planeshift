@@ -4,7 +4,7 @@ The functional suite runs the built `planeshift` executable as a subprocess.
 It exercises the real Cobra command tree, Viper/environment configuration,
 Plane client, authentication, response decoding, output, and cleanup path.
 It is intentionally opt-in because it creates, updates, archives, and deletes
-projects, states, labels, and work items.
+projects, states, labels, work items, and work-item links.
 
 ## Run
 
@@ -22,8 +22,9 @@ mise function-test
 `PLANE_API_URL` is required even though the CLI has a Plane Cloud default. A
 mutating functional run never silently selects that default. Prism is useful
 for validating the request contract; a stateful disposable non-production
-Plane workspace or forwarding proxy is required for the complete state and
-project-label create/read/update/delete lifecycles.
+Plane workspace or forwarding proxy is required for the complete state,
+project-label, work-item, and work-item-link create/read/update/delete
+lifecycles.
 
 ## Settings
 
@@ -46,16 +47,18 @@ Optional settings:
 
 | Variable | Purpose |
 | --- | --- |
-| `PLANE_FUNCTIONAL_INCLUDE_LEGACY=true` | Runs the seven hidden `work-item legacy` compatibility commands against `/issues/`. Default: skipped. |
+| `PLANE_FUNCTIONAL_INCLUDE_LEGACY=true` | Runs the hidden `work-item legacy` and five hidden `link legacy` compatibility commands against `/issues/`. Default: skipped. |
 | `PLANE_FUNCTIONAL_PROJECT_TEMPLATE_ID` | Runs `project create-template` and cleans up the generated project. Default: skipped. |
 | `PLANE_FUNCTIONAL_ALLOW_PRODUCTION=true` | Overrides the Plane Cloud host safety gate only after explicit team review. Prefer Prism or a non-production host. |
 
 The template command is a Business-license feature. It is always registered
 and help-tested, but it is not executed without the template ID. Deprecated
-`/issues/` routes are also never called without the legacy opt-in. If an opted-in
-target returns an explicit unsupported/404/405 response for those routes, the
-test records a visible skip naming the `/issues/` limitation; it never
-substitutes a current `/work-items/` call.
+`/issues/` routes are also never called without the legacy opt-in. When
+`PLANE_FUNCTIONAL_INCLUDE_LEGACY=true`, the opt-in covers both hidden work-item
+and link compatibility commands. If an opted-in target returns an explicit
+unsupported/404/405 response for those routes, the test records a visible skip
+naming the `/issues/` limitation; it never substitutes a current
+`/work-items/` call.
 
 ## Isolation, cleanup, and output
 
@@ -65,11 +68,11 @@ substitutes a current `/work-items/` call.
 so it cannot read or modify the operator's normal Planeshift config. Only safe
 process settings and the explicitly selected Plane settings are inherited.
 
-Every generated project, state, label, and work-item ID is tracked immediately.
-Cleanup handlers use only those IDs, delete child states, labels, and work
-items before their project, delete labels before their generated parent
-project, unarchive an archived project before deleting it, and log
-already-deleted or failed cleanup resources visibly. Names and identifiers
+Every generated project, state, label, work-item, and link ID is tracked
+immediately. Cleanup handlers use only those IDs, delete generated links before
+their generated work items, delete child states, labels, and work items before
+their generated project, unarchive an archived project before deleting it, and
+log already-deleted or failed cleanup resources visibly. Names and identifiers
 include timestamp and process entropy to avoid existing resources. The suite
 never accepts an arbitrary existing resource ID as a destructive target.
 

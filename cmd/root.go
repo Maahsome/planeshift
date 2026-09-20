@@ -8,6 +8,7 @@ import (
 
 	contextcommand "planeshift/cmd/context"
 	labelcommand "planeshift/cmd/label"
+	linkcommand "planeshift/cmd/link"
 	projectcommand "planeshift/cmd/project"
 	statecommand "planeshift/cmd/state"
 	versioncommand "planeshift/cmd/version"
@@ -114,6 +115,7 @@ func addSubCommands() {
 		projectcommand.Init(c, newPlaneClientFactory(c)),
 		statecommand.Init(c, newPlaneClientFactory(c)),
 		labelcommand.Init(c, newPlaneClientFactory(c)),
+		linkcommand.Init(c, newPlaneClientFactory(c)),
 		workitemcommand.Init(c, newPlaneClientFactory(c)),
 		versioncommand.Init(c),
 	)

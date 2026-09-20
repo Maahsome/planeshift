@@ -192,6 +192,13 @@ func TestRootCommandHierarchyAndLazyFactory(t *testing.T) {
 	if link.Name() != config.LinkCommandName || !link.HasAlias(config.LinkCommandAlias) {
 		t.Fatalf("link command = name %q aliases %v", link.Name(), link.Aliases)
 	}
+	activity, _, err := RootCmd.Find([]string{config.ActivityCommandName})
+	if err != nil || activity == nil || activity.Parent() != RootCmd {
+		t.Fatalf("activity is not registered below RootCmd: command=%v err=%v", activity, err)
+	}
+	if activity.Name() != config.ActivityCommandName || !activity.HasAlias(config.ActivityCommandAlias) {
+		t.Fatalf("activity command = name %q aliases %v", activity.Name(), activity.Aliases)
+	}
 	pluralLabel, _, err := RootCmd.Find([]string{config.LabelCommandAlias})
 	if err != nil || pluralLabel != label {
 		t.Fatalf("plural label alias resolved to command=%v err=%v", pluralLabel, err)
@@ -199,6 +206,10 @@ func TestRootCommandHierarchyAndLazyFactory(t *testing.T) {
 	pluralLink, _, err := RootCmd.Find([]string{config.LinkCommandAlias})
 	if err != nil || pluralLink != link {
 		t.Fatalf("plural link alias resolved to command=%v err=%v", pluralLink, err)
+	}
+	pluralActivity, _, err := RootCmd.Find([]string{config.ActivityCommandAlias})
+	if err != nil || pluralActivity != activity {
+		t.Fatalf("plural activity alias resolved to command=%v err=%v", pluralActivity, err)
 	}
 	pluralState, _, err := RootCmd.Find([]string{config.StateCommandAlias})
 	if err != nil || pluralState != state {

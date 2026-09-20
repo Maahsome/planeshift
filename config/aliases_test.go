@@ -47,6 +47,15 @@ func TestLinkCommandNames(t *testing.T) {
 	}
 }
 
+func TestActivityCommandNames(t *testing.T) {
+	if ActivityCommandName != "activity" {
+		t.Fatalf("ActivityCommandName = %q, want activity", ActivityCommandName)
+	}
+	if ActivityCommandAlias != "activities" {
+		t.Fatalf("ActivityCommandAlias = %q, want activities", ActivityCommandAlias)
+	}
+}
+
 func TestContextCommandName(t *testing.T) {
 	if ContextCommandName != "context" {
 		t.Fatalf("ContextCommandName = %q, want context", ContextCommandName)

@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	activitycommand "planeshift/cmd/activity"
 	contextcommand "planeshift/cmd/context"
 	labelcommand "planeshift/cmd/label"
 	linkcommand "planeshift/cmd/link"
@@ -116,6 +117,7 @@ func addSubCommands() {
 		statecommand.Init(c, newPlaneClientFactory(c)),
 		labelcommand.Init(c, newPlaneClientFactory(c)),
 		linkcommand.Init(c, newPlaneClientFactory(c)),
+		activitycommand.Init(c, newPlaneClientFactory(c)),
 		workitemcommand.Init(c, newPlaneClientFactory(c)),
 		versioncommand.Init(c),
 	)

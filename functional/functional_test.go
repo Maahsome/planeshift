@@ -14,10 +14,11 @@ import (
 // package. The usage text is asserted from Cobra help rather than importing
 // command packages, keeping the functional suite on the executable boundary.
 type commandSpec struct {
-	path          []string
-	usage         string
-	flags         []string
-	requiredFlags []string
+	path           []string
+	usage          string
+	flags          []string
+	requiredFlags  []string
+	forbiddenFlags []string
 }
 
 var commandCoverage = []commandSpec{
@@ -57,6 +58,20 @@ var commandCoverage = []commandSpec{
 	{path: []string{"work-item", "legacy", "get"}, usage: "get work_item_id", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"work-item", "legacy", "update"}, usage: "update work_item_id", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"work-item", "legacy", "delete"}, usage: "delete work_item_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"link"}, usage: "link"},
+	{path: []string{"links"}, usage: "link"},
+	{path: []string{"link", "list"}, usage: "list work_item_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"links", "list"}, usage: "list work_item_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"link", "create"}, usage: "create work_item_id", flags: []string{"--workspace", "--project-id", "--url", "--title"}, requiredFlags: []string{"--url"}},
+	{path: []string{"link", "get"}, usage: "get work_item_id link_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand"}, forbiddenFlags: []string{"--order-by"}},
+	{path: []string{"link", "update"}, usage: "update work_item_id link_id", flags: []string{"--workspace", "--project-id", "--url", "--title"}},
+	{path: []string{"link", "delete"}, usage: "delete work_item_id link_id", flags: []string{"--workspace", "--project-id"}},
+	{path: []string{"link", "legacy"}, usage: "legacy"},
+	{path: []string{"link", "legacy", "list"}, usage: "list issue_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand", "--order-by"}},
+	{path: []string{"link", "legacy", "create"}, usage: "create issue_id", flags: []string{"--workspace", "--project-id", "--url", "--title"}, requiredFlags: []string{"--url"}},
+	{path: []string{"link", "legacy", "get"}, usage: "get issue_id link_id", flags: []string{"--workspace", "--project-id", "--cursor", "--per-page", "--fields", "--expand"}, forbiddenFlags: []string{"--order-by"}},
+	{path: []string{"link", "legacy", "update"}, usage: "update issue_id link_id", flags: []string{"--workspace", "--project-id", "--url", "--title"}},
+	{path: []string{"link", "legacy", "delete"}, usage: "delete issue_id link_id", flags: []string{"--workspace", "--project-id"}},
 	{path: []string{"state"}, usage: "state"},
 	{path: []string{"states"}, usage: "state"},
 	{path: []string{"state", "list"}, usage: "list", flags: []string{"--workspace", "--project-id"}},
@@ -101,6 +116,11 @@ func TestCommandCoverageMatrix(t *testing.T) {
 					t.Fatalf("help for %s omitted context flag %q:\n%s", strings.Join(spec.path, " "), flag, help)
 				}
 			}
+			for _, flag := range spec.forbiddenFlags {
+				if strings.Contains(help, flag) {
+					t.Fatalf("help for %s unexpectedly included flag %q:\n%s", strings.Join(spec.path, " "), flag, help)
+				}
+			}
 			assertNoCredentialMaterial(t, help)
 		})
 	}
@@ -123,7 +143,7 @@ func TestVersionAndRootHelpAreSafe(t *testing.T) {
 	assertNoCredentialMaterial(t, version.Output())
 
 	for _, path := range [][]string{
-		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"}, {"label"}, {"labels"},
+		{}, {"context"}, {"context", "set"}, {"context", "get"}, {"context", "prompt"}, {"project"}, {"projects"}, {"work-item"}, {"work-items"}, {"work-item", "legacy"}, {"state"}, {"states"}, {"label"}, {"labels"}, {"link"}, {"links"}, {"link", "legacy"},
 	} {
 		args := append(append([]string(nil), path...), "--help")
 		result := runner.Run(t, args...)
@@ -410,6 +430,47 @@ func registerWorkItemCleanup(t *testing.T, runner *Runner, workspace, projectID,
 	return item
 }
 
+type managedLink struct {
+	runner    *Runner
+	workspace string
+	projectID string
+	parentID  string
+	id        string
+	legacy    bool
+	deleted   bool
+}
+
+func registerLinkCleanup(t *testing.T, runner *Runner, workspace, projectID, parentID, id string, legacy bool) *managedLink {
+	t.Helper()
+	link := &managedLink{
+		runner: runner, workspace: workspace, projectID: projectID,
+		parentID: parentID, id: id, legacy: legacy,
+	}
+	t.Cleanup(func() {
+		if link.deleted {
+			t.Logf("functional cleanup: %s link %s was already deleted by the lifecycle", linkRouteName(link.legacy), link.id)
+			return
+		}
+		command := []string{"link"}
+		if link.legacy {
+			command = append(command, "legacy")
+		}
+		command = append(command, "delete", "--workspace", link.workspace, "--project-id", link.projectID, link.parentID, link.id)
+		result := runner.Run(t, command...)
+		if result.Err != nil || result.ExitCode != 0 {
+			t.Logf("functional cleanup: %s link %s was already deleted or could not be deleted: %s", linkRouteName(link.legacy), link.id, result.Output())
+		}
+	})
+	return link
+}
+
+func linkRouteName(legacy bool) string {
+	if legacy {
+		return "legacy"
+	}
+	return "current"
+}
+
 func TestPrimaryWorkItemLifecycle(t *testing.T) {
 	config, ok := lifecycleConfig(t)
 	if !ok {
@@ -485,6 +546,68 @@ func TestPrimaryWorkItemLifecycle(t *testing.T) {
 	project.archived = false
 	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.deleted = true
+}
+
+func TestLinkLifecycle(t *testing.T) {
+	config, ok := lifecycleConfig(t)
+	if !ok {
+		return
+	}
+	runner, err := newRunner(t, config)
+	if err != nil {
+		t.Fatalf("configure functional runner: %v", err)
+	}
+
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
+		"--name", uniqueName("links-project"), "--identifier", uniqueIdentifier())
+	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
+
+	workItemName := uniqueName("link-work-item")
+	workItemData, _ := runner.RunJSON(t, "work-item", "create", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, "--name", workItemName)
+	workItem := registerWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, workItemData))
+
+	linkURL := "https://example.com/" + uniqueName("link")
+	linkTitle := uniqueName("link-title")
+	created, _ := runner.RunJSON(t, "link", "create", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, "--url", linkURL, "--title", linkTitle)
+	managed := registerLinkCleanup(t, runner, config.WorkspaceSlug, project.id, workItem.id, linkID(t, created), false)
+	if !jsonContainsString(created, managed.id) || !jsonContainsString(created, linkURL) || !jsonContainsString(created, linkTitle) {
+		t.Fatalf("created link omitted generated link %s/%q/%q: %s", managed.id, linkURL, linkTitle, created)
+	}
+
+	list, _ := runner.RunJSON(t, "link", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		workItem.id, "--per-page", "20")
+	if !jsonContainsString(list, managed.id) || !jsonContainsString(list, linkURL) || !jsonContainsString(list, linkTitle) {
+		t.Fatalf("link list omitted generated link %s: %s", managed.id, list)
+	}
+	aliasList, _ := runner.RunJSON(t, "links", "list", "--workspace", config.WorkspaceSlug, "--project-id", project.id, workItem.id)
+	if !jsonContainsString(aliasList, managed.id) {
+		t.Fatalf("links list alias omitted generated link %s: %s", managed.id, aliasList)
+	}
+
+	got, _ := runner.RunJSON(t, "link", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		workItem.id, managed.id, "--per-page", "20")
+	if !jsonContainsString(got, managed.id) || !jsonContainsString(got, linkURL) || !jsonContainsString(got, linkTitle) {
+		t.Fatalf("link get omitted generated link %s: %s", managed.id, got)
+	}
+
+	updatedURL := "https://example.com/" + uniqueName("updated-link")
+	updatedTitle := uniqueName("updated-link-title")
+	updated, _ := runner.RunJSON(t, "link", "update", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		workItem.id, managed.id, "--url", updatedURL, "--title", updatedTitle)
+	if !jsonContainsString(updated, managed.id) || !jsonContainsString(updated, updatedURL) || !jsonContainsString(updated, updatedTitle) {
+		t.Fatalf("link update omitted generated link %s with updated values: %s", managed.id, updated)
+	}
+	persisted, _ := runner.RunJSON(t, "link", "get", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		workItem.id, managed.id)
+	if !jsonContainsString(persisted, managed.id) || !jsonContainsString(persisted, updatedURL) || !jsonContainsString(persisted, updatedTitle) {
+		t.Fatalf("link get did not persist updated values for %s: %s", managed.id, persisted)
+	}
+
+	runner.Run(t, "link", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		workItem.id, managed.id).RequireQuietSuccess(t)
+	managed.deleted = true
 }
 
 func registerLegacyWorkItemCleanup(t *testing.T, runner *Runner, workspace, projectID, id string) *managedWorkItem {
@@ -574,6 +697,80 @@ func TestLegacyWorkItemCompatibilityWhenOptedIn(t *testing.T) {
 	project.archived = false
 	runner.Run(t, "project", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id).RequireQuietSuccess(t)
 	project.deleted = true
+}
+
+func TestLegacyLinkCompatibilityWhenOptedIn(t *testing.T) {
+	if !isTrue(os.Getenv(functionalOptIn)) || !isTrue(os.Getenv(functionalLegacy)) {
+		t.Skipf("coverage status: hidden legacy /issues/ link lifecycle skipped; set %s=true and %s=true to enable", functionalOptIn, functionalLegacy)
+	}
+	config, err := loadFunctionalConfig()
+	if err != nil {
+		t.Fatalf("legacy link functional prerequisites: %v", err)
+	}
+	runner, err := newRunner(t, config)
+	if err != nil {
+		t.Fatalf("configure legacy link functional runner: %v", err)
+	}
+
+	projectData, _ := runner.RunJSON(t, "project", "create", "--workspace", config.WorkspaceSlug,
+		"--name", uniqueName("legacy-links-project"), "--identifier", uniqueIdentifier())
+	project := registerProjectCleanup(t, runner, config.WorkspaceSlug, projectID(t, projectData))
+	workItemData, _ := runner.RunJSON(t, "work-item", "create", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, "--name", uniqueName("legacy-link-work-item"))
+	workItem := registerWorkItemCleanup(t, runner, config.WorkspaceSlug, project.id, workItemID(t, workItemData))
+
+	linkURL := "https://example.com/" + uniqueName("legacy-link")
+	linkTitle := uniqueName("legacy-link-title")
+	created, supported := runLegacyJSON(t, runner, "link", "legacy", "create", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, "--url", linkURL, "--title", linkTitle)
+	if !supported {
+		return
+	}
+	managed := registerLinkCleanup(t, runner, config.WorkspaceSlug, project.id, workItem.id, linkID(t, created), true)
+	if !jsonContainsString(created, managed.id) || !jsonContainsString(created, linkURL) || !jsonContainsString(created, linkTitle) {
+		t.Fatalf("legacy create omitted generated link %s/%q/%q: %s", managed.id, linkURL, linkTitle, created)
+	}
+
+	list, supported := runLegacyJSON(t, runner, "link", "legacy", "list", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, "--per-page", "20")
+	if !supported {
+		return
+	}
+	if !jsonContainsString(list, managed.id) {
+		t.Fatalf("legacy link list omitted generated link %s: %s", managed.id, list)
+	}
+
+	got, supported := runLegacyJSON(t, runner, "link", "legacy", "get", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, managed.id, "--per-page", "20")
+	if !supported {
+		return
+	}
+	if !jsonContainsString(got, managed.id) || !jsonContainsString(got, linkURL) {
+		t.Fatalf("legacy link get omitted generated link %s: %s", managed.id, got)
+	}
+
+	updatedURL := "https://example.com/" + uniqueName("legacy-updated-link")
+	updatedTitle := uniqueName("legacy-updated-link-title")
+	updated, supported := runLegacyJSON(t, runner, "link", "legacy", "update", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, managed.id, "--url", updatedURL, "--title", updatedTitle)
+	if !supported {
+		return
+	}
+	if !jsonContainsString(updated, managed.id) || !jsonContainsString(updated, updatedURL) || !jsonContainsString(updated, updatedTitle) {
+		t.Fatalf("legacy link update omitted generated link %s with updated values: %s", managed.id, updated)
+	}
+	persisted, supported := runLegacyJSON(t, runner, "link", "legacy", "get", "--workspace", config.WorkspaceSlug,
+		"--project-id", project.id, workItem.id, managed.id)
+	if !supported {
+		return
+	}
+	if !jsonContainsString(persisted, managed.id) || !jsonContainsString(persisted, updatedURL) || !jsonContainsString(persisted, updatedTitle) {
+		t.Fatalf("legacy link get did not persist updated values for %s: %s", managed.id, persisted)
+	}
+
+	runner.Run(t, "link", "legacy", "delete", "--workspace", config.WorkspaceSlug, "--project-id", project.id,
+		workItem.id, managed.id).RequireQuietSuccess(t)
+	managed.deleted = true
 }
 
 func runLegacyJSON(t *testing.T, runner *Runner, args ...string) (json.RawMessage, bool) {
